@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports - OrgManager</title>
+    <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ea580c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SSTPA Portal">
+  <link rel="apple-touch-icon" href="images/logo.png">
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+    @media (max-width: 900px) {
+      .analytics-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .percentage-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .percentage-bar-outer {
+      flex: 1;
+      height: 10px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 5px;
+      margin: 0 15px;
+      overflow: hidden;
+    }
+    .percentage-bar-inner {
+      height: 100%;
+      background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+      border-radius: 5px;
+      width: 0%;
+      transition: width 1s ease-in-out;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div id="sidebar-placeholder" class="sidebar glass-panel"></div>
+    
+    <main class="main-content">
+      <header id="header-placeholder" class="main-header"></header>
+
+      <div class="analytics-grid fade-in">
+        <!-- Budget Ledger Summary -->
+        <section class="glass-panel glass-card" style="grid-column: 1 / -1;">
+          <h2 style="margin-bottom: 20px;">Financial Ledger Balance</h2>
+          <div style="display:flex; justify-content:space-around; margin-bottom: 30px; text-align:center;">
+            <div>
+              <span style="font-size:14px; color:var(--text-secondary);">Total Sponsorship Funding</span>
+              <h3 id="rep-total-funding" style="font-size:28px; font-weight:700; color:var(--success); margin-top:8px;">$0</h3>
+            </div>
+            <div style="border-left: 1px solid var(--panel-border); padding-left:30px;">
+              <span style="font-size:14px; color:var(--text-secondary);">Total Expenses Incurred</span>
+              <h3 id="rep-total-expenses" style="font-size:28px; font-weight:700; color:var(--danger); margin-top:8px;">$0</h3>
+            </div>
+            <div style="border-left: 1px solid var(--panel-border); padding-left:30px;">
+              <span style="font-size:14px; color:var(--text-secondary);">Net Available Balance</span>
+              <h3 id="rep-net-balance" style="font-size:28px; font-weight:700; margin-top:8px;">$0</h3>
+            </div>
+          </div>
+        </section>
+
+        <!-- Category Expenses Breakdown -->
+        <section class="glass-panel glass-card">
+          <h2 style="margin-bottom: 20px;">Expenditures Category Breakdown</h2>
+          <div id="category-bars-container">
+            <div style="text-align:center; color:var(--text-muted); padding:20px;">Loading breakdown metrics...</div>
+          </div>
+        </section>
+
+        <!-- Sponsorship Contributions Ledger -->
+        <section class="glass-panel glass-card">
+          <h2 style="margin-bottom: 20px;">Recent Sponsors Contributions</h2>
+          <div class="table-container" style="max-height: 350px; overflow-y:auto;">
+            <table class="glass-table">
+              <thead>
+                <tr>
+                  <th>Sponsor Name</th>
+                  <th>Method</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody id="sponsors-ledger-tbody">
+                <tr>
+                  <td colspan="3" style="text-align:center; color:var(--text-muted);">No records available.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', loadReportsData);
+
+    async function loadReportsData() {
+      try {
+        const data = await apiFetch('/reports/financials');
+        if (!data) return;
+
+        // Calculate totals
+        let totalFunding = 0;
+        data.sponsorships.forEach(sp => {
+          totalFunding += sp.contribution_amount || 0;
+        });
+
+        let totalExpenses = 0;
+        data.expenses.forEach(ex => {
+          totalExpenses += ex.amount || 0;
+        });
+
+        document.getElementById('rep-total-funding').textContent = `$${totalFunding.toLocaleString()}`;
+        document.getElementById('rep-total-expenses').textContent = `$${totalExpenses.toLocaleString()}`;
+        
+        const net = totalFunding - totalExpenses;
+        const netEl = document.getElementById('rep-net-balance');
+        netEl.textContent = net >= 0 ? `$${net.toLocaleString()}` : `-$${Math.abs(net).toLocaleString()}`;
+        if (net < 0) {
+          netEl.style.color = 'var(--danger)';
+        } else {
+          netEl.style.color = 'var(--success)';
+        }
+
+        // Render category bars
+        const barsContainer = document.getElementById('category-bars-container');
+        if (!data.categoryBreakdown || data.categoryBreakdown.length === 0) {
+          barsContainer.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:20px;">No expenses recorded.</div>';
+        } else {
+          barsContainer.innerHTML = data.categoryBreakdown.map(cat => {
+            const pct = totalExpenses > 0 ? Math.round((cat.total / totalExpenses) * 100) : 0;
+            return `
+              <div style="margin-bottom: 18px;">
+                <div class="percentage-row">
+                  <span style="font-weight:500; text-transform:capitalize;">${cat.category}</span>
+                  <span style="color:var(--text-secondary); font-size:14px;">$${cat.total.toLocaleString()} (${pct}%)</span>
+                </div>
+                <div class="percentage-bar-outer">
+                  <div class="percentage-bar-inner" style="width: ${pct}%"></div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        // Render sponsorship contributors list
+        const ledgerBody = document.getElementById('sponsors-ledger-tbody');
+        if (!data.sponsorships || data.sponsorships.length === 0) {
+          ledgerBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No sponsors recorded.</td></tr>';
+        } else {
+          ledgerBody.innerHTML = data.sponsorships.map(sp => {
+            return `
+              <tr>
+                <td style="font-weight:600;">${sp.name}</td>
+                <td style="text-transform:capitalize; font-size:14px; color:var(--text-secondary);">${sp.contribution_type}</td>
+                <td style="font-weight:600; color:var(--success);">$${sp.contribution_amount.toLocaleString()}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

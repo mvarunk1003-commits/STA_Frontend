@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Notice Builder - SSTPA Portal</title>
+    <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ea580c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SSTPA Portal">
+  <link rel="apple-touch-icon" href="images/logo.png">
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <link rel="stylesheet" href="css/app.css">
+  <!-- Tiro Kannada & Tiro Devanagari Sanskrit — ceremonial calligraphic fonts for notice document -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Sanskrit:ital@0;1&family=Tiro+Kannada:ital@0;1&display=swap" rel="stylesheet">
+  <!-- PDF + Image export libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    /* ── Notice Language Selector ── */
+    .notice-lang-btn {
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid rgba(234, 88, 12, 0.25);
+      background: var(--panel-bg);
+      color: var(--text-primary);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .notice-lang-btn:hover {
+      border-color: var(--primary-color);
+      background: rgba(234, 88, 12, 0.08);
+    }
+    .notice-lang-btn.active {
+      background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%) !important;
+      color: #ffffff !important;
+      border-color: #ea580c !important;
+      box-shadow: 0 3px 10px rgba(234, 88, 12, 0.3);
+    }
+    /* ── Layout ── */
+    .notice-builder-layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    @media (max-width: 950px) {
+      .notice-builder-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 1400px) {
+      .main-content {
+        padding: 20px !important;
+      }
+    }
+
+    /* ── Form Column & Panel ── */
+    .form-column {
+      position: sticky;
+      top: 24px;
+      max-height: calc(100vh - 80px);
+    }
+
+    .form-panel {
+      max-height: calc(100vh - 150px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      border-radius: var(--border-radius);
+      box-shadow: 0 10px 30px rgba(234, 88, 12, 0.04);
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      transition: all 0.3s ease;
+    }
+
+    .form-panel:hover {
+      box-shadow: 0 12px 36px rgba(234, 88, 12, 0.08);
+      border-color: rgba(234, 88, 12, 0.3);
+    }
+
+    .form-panel::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .form-panel::-webkit-scrollbar-thumb {
+      background: rgba(234, 88, 12, 0.2);
+      border-radius: 4px;
+    }
+
+    .form-section-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--primary-color);
+      margin: 20px 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 1.5px solid rgba(234, 88, 12, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dynamic-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .dynamic-row input,
+    .dynamic-row textarea {
+      flex: 1;
+      font-size: 13px;
+    }
+
+    .dynamic-row .remove-btn {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+      border-radius: 6px;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .add-row-btn {
+      font-size: 12px;
+      padding: 6px 12px;
+      color: #f59e0b;
+      border: 1px dashed rgba(245, 158, 11, 0.5);
+      background: rgba(245, 158, 11, 0.05);
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 4px;
+      transition: background 0.2s;
+    }
+
+    .add-row-btn:hover {
+      background: rgba(245, 158, 11, 0.1);
+    }
+
+    .action-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 16px;
+      border-top: 1px solid var(--panel-border);
+      background: var(--panel-bg);
+      position: sticky;
+      bottom: 0;
+    }
+
+    .action-bar .btn {
+      flex: 1;
+      min-width: 120px;
+      font-size: 13px;
+    }
+
+    /* ── Preview Panel ── */
+    .preview-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      background: #f8fafc;
+      border-radius: var(--border-radius);
+      border: 1px solid rgba(234, 88, 12, 0.1);
+      padding: 20px;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.02);
+      background-image: 
+        radial-gradient(rgba(234, 88, 12, 0.08) 1px, transparent 1px),
+        radial-gradient(rgba(234, 88, 12, 0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
+      background-position: 0 0, 12px 12px;
+      align-items: center;
+      min-height: 1000px;
+      width: 100%;
+      overflow-x: auto;
+    }
+
+    .preview-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 620px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .download-btns {
+      display: flex;
+      gap: 10px;
+    }
+
+    /* ── THE NOTICE DOCUMENT ── */
+    #notice-preview {
+      background: #fff;
+      color: #1a1a1a;
+      font-family: 'Tiro Kannada', 'Tiro Devanagari Sanskrit', 'Noto Serif Devanagari', 'Noto Serif Kannada', 'Noto Serif', Georgia, serif;
+      font-size: 14px;
+      line-height: 1.75;
+      width: 620px;
+      min-height: 876px;
+      margin: 0 auto;
+      padding: 0;
+      box-shadow: 0 15px 45px rgba(63, 26, 13, 0.12), 0 5px 15px rgba(63, 26, 13, 0.04);
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid rgba(234, 88, 12, 0.08);
+    }
+
+    #notice-preview:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 25px 55px rgba(63, 26, 13, 0.18), 0 8px 20px rgba(63, 26, 13, 0.06);
+    }
+
+    /* Decorative border frame */
+    .notice-outer-border {
+      border: 8px solid #1a3a6e;
+      border-image: repeating-linear-gradient(45deg, #1a3a6e 0, #1a3a6e 10px, #c8a84b 10px, #c8a84b 20px) 8;
+      padding: 14px;
+      min-height: 100%;
+    }
+
+    .notice-inner-border {
+      border: 2px solid #c8a84b;
+      padding: 16px 20px;
+      min-height: 100%;
+    }
+
+    /* Header */
+    .notice-header {
+      text-align: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #c8a84b;
+      margin-bottom: 10px;
+    }
+
+    .notice-top-text {
+      font-size: 13px;
+      color: #8b0000;
+      font-style: italic;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .notice-guru-banner {
+      display: block;
+      margin: 8px auto 10px;
+      max-width: 100%;
+      height: auto;
+      max-height: 110px;
+      object-fit: contain;
+    }
+
+    .notice-org-block {
+      flex: 1;
+      padding: 0 10px;
+      font-size: 11.5px;
+      color: #1a1a1a;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .notice-org-name {
+      font-size: 22px;
+      font-weight: 700;
+      font-style: italic;
+      color: #8b0000;
+      margin: 6px 0 4px;
+      line-height: 1.25;
+      letter-spacing: 0.3px;
+    }
+
+    .notice-sub-org {
+      font-size: 13px;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    /* Event Title Box */
+    .notice-title-box {
+      border: 2.5px solid #c8a84b;
+      border-radius: 8px;
+      padding: 12px 18px;
+      margin: 12px 0;
+      text-align: center;
+      background: #fffdf5;
+    }
+
+    .notice-title-box p {
+      font-size: 19px;
+      font-weight: 700;
+      font-style: italic;
+      color: #8b0000;
+      line-height: 1.5;
+      margin: 0;
+      letter-spacing: 0.2px;
+    }
+
+    /* Body */
+    .notice-body {
+      font-size: 13px;
+      line-height: 1.7;
+      color: #1a1a1a;
+    }
+
+    .notice-salutation {
+      margin-bottom: 10px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .notice-event-desc {
+      text-indent: 28px;
+      margin-bottom: 12px;
+    }
+
+    .notice-field-row {
+      margin-bottom: 8px;
+    }
+
+    .notice-field-row strong {
+      color: #1a3a6e;
+    }
+
+    .notice-underline-text {
+      text-decoration: underline;
+      font-weight: 600;
+    }
+
+    /* Attendees */
+    .notice-attendees {
+      margin: 10px 0 14px;
+    }
+
+    .notice-attendees .notice-att-label {
+      font-weight: 700;
+      font-size: 13.5px;
+      text-decoration: underline;
+      margin-bottom: 6px;
+    }
+
+    .notice-att-item {
+      padding-left: 20px;
+      margin-bottom: 4px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* Notices/Instructions box */
+    .notice-instructions {
+      margin: 12px 0;
+      color: #ff0000;
+    }
+
+    .notice-instructions .notice-inst-title {
+      font-weight: 800;
+      font-size: 13.5px;
+      color: #8b0000;
+      margin-bottom: 6px;
+    }
+
+    .notice-inst-item {
+      font-size: 13.5px;
+      margin-bottom: 6px;
+      padding-left: 4px;
+      line-height: 1.5;
+    }
+
+    /* Footer row */
+    .notice-footer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-top: 16px;
+      gap: 12px;
+    }
+
+    .notice-contact-box {
+      border: 1.5px solid #1a3a6e;
+      border-radius: 4px;
+      padding: 10px 14px;
+      min-width: 160px;
+      background: #f5f8ff;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .notice-contact-box .contact-label {
+      font-weight: 800;
+      font-size: 12.5px;
+      color: #1a3a6e;
+      margin-bottom: 4px;
+    }
+
+    .notice-footer-text {
+      flex: 1;
+      text-align: right;
+      font-size: 13px;
+      font-weight: 600;
+      color: #8b0000;
+      line-height: 1.8;
+      padding-top: 4px;
+    }
+
+    /* Watermark logo */
+    .notice-watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 180px;
+      height: 180px;
+      opacity: 0.06;
+      pointer-events: none;
+    }
+
+    /* ── Pending Panel ── */
+    .pending-card {
+      border-left: 4px solid #f59e0b;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      background: rgba(245, 158, 11, 0.05);
+      border-radius: 0 8px 8px 0;
+    }
+
+    /* ── Contenteditable editable sections in preview ── */
+    [contenteditable="true"] {
+      outline: none;
+      cursor: text;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      border: 1px dashed transparent;
+      padding: 2px 4px;
+    }
+
+    [contenteditable="true"]:hover {
+      background: rgba(234, 88, 12, 0.04);
+      border-color: rgba(234, 88, 12, 0.25);
+    }
+
+    [contenteditable="true"]:focus {
+      background: rgba(234, 88, 12, 0.06);
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.12);
+    }
+
+    [contenteditable="true"]:empty:before {
+      content: attr(data-placeholder);
+      color: #aaa;
+      font-style: italic;
+      pointer-events: none;
+    }
+
+    .edit-hint {
+      font-size: 11px;
+      color: var(--primary-color);
+      text-align: center;
+      margin-bottom: 8px;
+      opacity: 0.85;
+      letter-spacing: 0.3px;
+      background: rgba(234, 88, 12, 0.06);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(234, 88, 12, 0.15);
+      display: inline-block;
+    }
+
+    /* ── Status badge wrapper ── */
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* spinner for export */
+    .export-spinner {
+      display: none;
+      font-size: 13px;
+      color: var(--text-secondary);
+      align-items: center;
+      gap: 6px;
+    }
+
+    .export-spinner.show {
+      display: flex;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-container">
+    <div id="sidebar-placeholder" class="sidebar glass-panel"></div>
+
+    <main class="main-content">
+      <header id="header-placeholder" class="main-header"></header>
+
+      <!-- Page Header -->
+      <section style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;"
+        class="fade-in">
+        <div>
+          <h2 style="font-size:22px; font-weight:700;">📋 Event Notice Builder</h2>
+          <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">
+            Create formatted event invitations/notices, preview, submit for approval, and download as PDF or PNG.
+          </p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <span id="notice-status-badge"></span>
+          <button class="btn btn-secondary" onclick="resetForm()" style="font-size:13px;">🔄 New Notice</button>
+        </div>
+      </section>
+
+      <!-- Tier 1: Pending Approvals -->
+      <section id="pending-section" style="display:none; margin-top:24px;" class="fade-in">
+        <h3 style="font-size:15px; font-weight:700; color:#f59e0b; margin-bottom:14px;">⏳ Pending Notice Approvals</h3>
+        <div id="pending-list"></div>
+      </section>
+
+      <!-- My Submitted Notices (Tier 2) -->
+      <section id="my-notices-section" style="display:none; margin-top:24px;" class="fade-in">
+        <h3 style="font-size:15px; font-weight:700; color:var(--text-secondary); margin-bottom:14px;">📄 My Submitted
+          Notices</h3>
+        <div id="my-notices-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+      </section>
+
+      <!-- Builder -->
+      <section style="margin-top:28px;" class="fade-in">
+        <div class="notice-builder-layout">
+
+          <!-- LEFT: Form Column -->
+          <div class="form-column" style="display:flex; flex-direction:column; gap:12px;">
+            <div class="glass-panel form-panel" id="form-panel">
+            <div style="padding: 18px 18px 0;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span style="font-size:20px;">✏️</span>
+                <h3 style="font-size:16px; font-weight:700; margin:0;">Notice Builder</h3>
+              </div>
+              <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">
+                Fill out the details below. Most elements can also be clicked and edited directly on the preview layout.
+              </p>
+              <input type="hidden" id="edit-notice-id">
+
+              <!-- Language Switcher Bar -->
+              <div class="notice-lang-selector" style="margin-bottom: 18px; background: linear-gradient(135deg, rgba(234, 88, 12, 0.07) 0%, rgba(245, 158, 11, 0.07) 100%); padding: 12px 14px; border-radius: 10px; border: 1.5px solid rgba(234, 88, 12, 0.25);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span style="font-weight: 700; font-size: 11.5px; color: var(--primary-color); text-transform: uppercase; letter-spacing: 0.8px;">🌐 Notice Language / ಭಾಷೆ:</span>
+                  <span id="current-notice-lang-tag" style="font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 12px; background: var(--primary-color); color: white;">ಕನ್ನಡ (KN)</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                  <button type="button" class="btn btn-secondary notice-lang-btn active" id="btn-lang-kn" onclick="selectNoticeLanguage('kn', true)">ಕನ್ನಡ (KN)</button>
+                  <button type="button" class="btn btn-secondary notice-lang-btn" id="btn-lang-sa" onclick="selectNoticeLanguage('sa', true)">संस्कृतम् (SA)</button>
+                  <button type="button" class="btn btn-secondary notice-lang-btn" id="btn-lang-en" onclick="selectNoticeLanguage('en', true)">English (EN)</button>
+                </div>
+              </div>
+
+              <!-- Fixed Header Info -->
+              <div
+                style="background: linear-gradient(135deg, rgba(234, 88, 12, 0.04) 0%, rgba(254, 240, 138, 0.06) 100%); border: 1px solid rgba(234, 88, 12, 0.15); border-radius: 10px; padding: 12px 14px; margin-bottom: 18px; font-size: 12px; color: var(--text-secondary); line-height: 1.5; display: flex; align-items: flex-start; gap: 10px;">
+                <span style="font-size: 16px; margin-top: 2px;">🔒</span>
+                <div>
+                  <div style="font-weight: 700; color: var(--primary-color); margin-bottom: 3px; font-size: 12.5px;">Standardized Header</div>
+                  <div style="font-size: 11px; opacity: 0.9;">The benediction, organization logo, Sringeri Peetham citation, and structural layout are locked and uniform.</div>
+                </div>
+              </div>
+
+              <!-- Local Branch -->
+              <p class="form-section-title">🏛️ Local Branch / Committee</p>
+              <div class="form-group">
+                <textarea id="f-suborg" class="form-textarea" rows="2"
+                  placeholder="ಕೋಲಾರ ತಾಲ್ಲೂಕು ಸಮಿತಿ ಹಾಗೂ ಕೋಲಾರ ಶೃಂಗೇರಿ ಶ್ರೀಶಂಕರ ಮಠ ಇವರ ಸಹಯೋಗದೊಂದಿಗೆ"
+                  oninput="updatePreview()"></textarea>
+              </div>
+
+              <!-- Event Title Builder -->
+              <p class="form-section-title">🎭 Event Title</p>
+              <div class="form-group">
+                <label class="form-label" for="f-event-type">Event Type</label>
+                <select id="f-event-type" class="form-select" onchange="toggleEventTypeOther(); updatePreview()">
+                  <option value="ಗುರು ಭಜನೋತ್ಸವ">ಭಜನೆ (Bhajan)</option>
+                  <option value="ಶಾಸ್ತ್ರೀಯ ಸಂಗೀತ">ಶಾಸ್ತ್ರೀಯ ಸಂಗೀತ (Shastriya Sangeetha)</option>
+                  <option value="ಸಂಗೀತ ಕಚೇರಿ">ಸಂಗೀತ ಕಚೇರಿ (Musical Concert)</option>
+                  <option value="ವೀಣಾ ವಾದನ">ವೀಣಾ ವಾದನ (Veena Vadhana)</option>
+                  <option value="Other">ಇತರೆ (Other)</option>
+                </select>
+              </div>
+              <div class="form-group" id="f-event-type-other-group" style="display:none;">
+                <label class="form-label" for="f-event-type-other">Specify Event Type</label>
+                <input type="text" id="f-event-type-other" class="form-input" placeholder="Enter event type" oninput="updatePreview()">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="f-title-prefix">Event Title Text (Editable in Preview)</label>
+                <textarea id="f-title-prefix" class="form-textarea" rows="2"
+                  placeholder="ಗುರು ಪೂರ್ಣಿಮಾ ನಿಮಿತ್ತ ಗುರು ಪಾದುಕಾ ಪೂಜೆ, ಗುರು ಸಪರ್ಯ ಮತ್ತು"
+                  oninput="updatePreview()">ಗುರು ಪೂರ್ಣಿಮಾ ನಿಮಿತ್ತ ಗುರು ಪಾದುಕಾ ಪೂಜೆ, ಗುರು ಸಪರ್ಯ ಮತ್ತು</textarea>
+              </div>
+
+              <!-- Program Details -->
+              <p class="form-section-title">📜 Program Details</p>
+              <div class="form-group">
+                <label class="form-label" for="f-salutation">Salutation</label>
+                <input type="text" id="f-salutation" class="form-input" value="ಮಾನ್ಯರೇ," oninput="updatePreview()">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="f-desc">Event Description</label>
+                <textarea id="f-desc" class="form-textarea" rows="2" oninput="updatePreview()">ಸ್ವಸ್ತಿಶ್ರೀ ಪರಾಭವ ನಾಮ ಸಂವತ್ಸರದ ಆಷಾಢ ಮಾಸ ಶುಕ್ಲ ಪಕ್ಷ ಪೂರ್ಣಿಮಾ ದಿನಾಂಕ – 29.07.2026.</textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="f-chairperson">Chairperson</label>
+                <input type="text" id="f-chairperson" class="form-input" placeholder="ಅಧ್ಯಕ್ಷರ ಹೆಸರು ನಮೂದಿಸಿ" oninput="updatePreview()">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="f-venue">Venue</label>
+                <input type="text" id="f-venue" class="form-input" placeholder="ಸಭಾಗೃಹ/ಸ್ಥಳದ ಹೆಸರು" oninput="updatePreview()">
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div class="form-group">
+                  <label class="form-label" for="f-date">Date</label>
+                  <input type="text" id="f-date" class="form-input" placeholder="DD.MM.YYYY" oninput="updatePreview()">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="f-time">Time</label>
+                  <input type="text" id="f-time" class="form-input" placeholder="ಸಂಜೆ 6:00" oninput="updatePreview()">
+                </div>
+              </div>
+
+              <!-- Attendees / Guests -->
+              <p class="form-section-title">👥 Dignitaries & Attendees</p>
+              <div id="f-attendees-container"></div>
+              <button type="button" class="btn btn-secondary" onclick="addAttendee('')" style="width:100%; margin-bottom:14px; font-size:12px; padding:6px;">+ Add Dignitary / Guest</button>
+
+              <!-- Instructions & Guidelines -->
+              <p class="form-section-title">📋 Notices & Guidelines</p>
+              <div id="f-notices-container"></div>
+              <button type="button" class="btn btn-secondary" onclick="addNotice('')" style="width:100%; margin-bottom:14px; font-size:12px; padding:6px;">+ Add Guideline / Notice</button>
+
+              <!-- State -->
+              <p class="form-section-title">📍 Approval Routing</p>
+              <div class="form-group">
+                <label class="form-label" for="f-state">State</label>
+                <select id="f-state" class="form-select">
+                  <option value="">-- Select State --</option>
+                  <option value="Karnataka">Karnataka</option>
+                  <option value="Tamil Nadu">Tamil Nadu</option>
+                  <option value="Kerala">Kerala</option>
+                  <option value="Andhra Pradesh">Andhra Pradesh</option>
+                  <option value="Telangana">Telangana</option>
+                  <option value="Maharashtra">Maharashtra</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <!-- Contact info in footer -->
+              <p class="form-section-title">📞 Contact Info</p>
+              <div class="form-group">
+                <textarea id="f-contact" class="form-textarea" rows="2"
+                  placeholder="97310 40800&#10;88615 39558"
+                  oninput="updatePreview()"></textarea>
+              </div>
+
+              <!-- Closing Line & Org Footer -->
+              <p class="form-section-title">✍️ Invitation Footer</p>
+              <div class="form-group">
+                <label class="form-label" for="f-org-footer">Issuing Body / Committee</label>
+                <textarea id="f-org-footer" class="form-textarea" rows="2" oninput="updatePreview()">ಅಧ್ಯಕ್ಷರು ಹಾಗೂ ಕಾರ್ಯಕಾರಿ ಸಮಿತಿ,
+ಶ್ರೀ ಶಂಕರ ತತ್ತ್ವ ಪ್ರಸಾರ ಅಭಿಯಾನ, ಕೋಲಾರ</textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="f-closing">Closing Line</label>
+                <input type="text" id="f-closing" class="form-input" value="ತಮಗೆಲ್ಲರಿಗೂ ಆತ್ಮೀಯ ಆಮಂತ್ರಣ."
+                  oninput="updatePreview()">
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Bar -->
+          <div class="action-bar">
+            <button class="btn btn-primary" onclick="submitNotice()" id="submit-btn">📤 Submit for Approval</button>
+            <button class="btn btn-secondary" onclick="saveAsDraft()" id="draft-btn">💾 Save Draft</button>
+          </div>
+        </div>
+
+        <!-- RIGHT: Preview Panel -->
+        <div class="preview-panel">
+          <div class="preview-panel-header">
+            <h3 style="font-size:15px; font-weight:700;">Live Preview</h3>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <span class="export-spinner" id="export-spinner">⏳ Generating...</span>
+              <div class="download-btns">
+                <button class="btn btn-secondary" onclick="downloadPDF()" style="font-size:12px; padding:8px 14px;">⬇
+                  PDF</button>
+                <button class="btn btn-secondary" onclick="downloadPNG()" style="font-size:12px; padding:8px 14px;">🖼
+                  PNG</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- THE ACTUAL NOTICE DOCUMENT -->
+          <div id="notice-preview" class="no-translate">
+            <!-- Subtle watermark -->
+            <img class="notice-watermark"
+              src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Dharma_Wheel.svg/512px-Dharma_Wheel.svg.png"
+              alt="" onerror="this.style.display='none'">
+
+            <div class="notice-outer-border">
+              <div class="notice-inner-border">
+
+                <!-- Header -->
+                <div class="notice-header">
+                  <div id="pv-salutation-header" class="notice-top-text">|| ವಂದೇ ಗುರು ಪರಂಪರಾಮ್ ||</div>
+                  <!-- Fixed Guru Header Image -->
+                  <div style="text-align:center; margin: 8px 0 10px;">
+                    <img src="images/guru-header.png" class="notice-guru-banner" alt="ಗುರು ಪರಂಪರೆ">
+                  </div>
+                  <!-- Fixed Org block — always shows the official SSTPA header text -->
+                  <div class="notice-org-block" style="padding:0;">
+                    <!-- Fixed benediction line -->
+                    <div id="pv-benediction" style="font-size:10px; color:#333; line-height:1.5; text-align:center; margin-bottom:4px;">
+                      ಶ್ರೀಮತ್ಪರಮಹಂಸೇತ್ಯಾದಿ ಸಮಸ್ತ ಬಿರುದಾವಳಿ ವಿರಾಜಮಾನರಾದ ಶೃಂಗೇರಿ ದಕ್ಷಿಣಾಮ್ನಾಯ ಶ್ರೀ ಶಾರದಾ ಪೀಠಾಧೀಶ್ವರ
+                      ಪರಮಪೂಜ್ಯ ಜಗದ್ಗುರು<br>
+                      ಶ್ರೀ ಶ್ರೀ ಭಾರತೀತೀರ್ಥ ಮಹಾಸ್ವಾಮಿಗಳವರ ಹಾಗೂ ತತ್ಕರಕಮಲಸಂಜಾತ ಜಗದ್ಗುರು ಶ್ರೀ ಶ್ರೀ ವಿಧುಶೇಖರಭಾರತೀ ಸ್ವಾಮಿಗಳವರ
+                      ಪರಮಾನುಗ್ರಹದಿಂದ
+                    </div>
+                    <!-- Fixed org name — always red, large -->
+                    <div id="pv-org-name" class="notice-org-name">ಶ್ರೀ ಶಂಕರ ತತ್ತ್ವ ಪ್ರಸಾರ ಅಭಿಯಾನ,</div>
+                    <!-- Fixed Sringeri reference line -->
+                    <div id="pv-peetham" style="font-size:11.5px; color:#333; text-align:center; line-height:1.5; margin-bottom:4px;">
+                      ಶ್ರೀ ಶ್ರೀ ಜಗದ್ಗುರು ಶಂಕರಾಚಾರ್ಯ ಮಹಾಸಂಸ್ಥಾನ, ದಕ್ಷಿಣಾಮ್ನಾಯ ಶ್ರೀ ಶಾರದಾ ಪೀಠ, ಶೃಂಗೇರಿ
+                    </div>
+                    <!-- Editable local branch line -->
+                    <div id="pv-sub-org" class="notice-sub-org"></div>
+                  </div>
+                </div>
+
+                <!-- Edit hint -->
+                <!-- Event Title Box (editable) -->
+                <div class="notice-title-box">
+                  <p id="pv-title" contenteditable="true" spellcheck="false"
+                    data-placeholder="ಕಾರ್ಯಕ್ರಮ ಶೀರ್ಷಿಕೆ">ಗುರು ಪೂರ್ಣಿಮಾ ನಿಮಿತ್ತ ಗುರು ಪಾದುಕಾ ಪೂಜೆ, ಗುರು ಸಪರ್ಯ ಮತ್ತು
+                    ಗುರು ಭಜನೋತ್ಸವ ಕಾರ್ಯಕ್ರಮ</p>
+                </div>
+
+                <!-- Body -->
+                <div class="notice-body">
+                  <div id="pv-salutation" class="notice-salutation" contenteditable="true" spellcheck="false"
+                    data-placeholder="ಮಾನ್ಯರೇ,">ಮಾನ್ಯರೇ,</div>
+
+                  <div id="pv-desc" class="notice-event-desc" contenteditable="true" spellcheck="false"
+                    data-placeholder="ಕಾರ್ಯಕ್ರಮದ ವಿವರಣೆಯನ್ನು ಇಲ್ಲಿ ನಮೂದಿಸಿ">ಸ್ವಸ್ತಿಶ್ರೀ ಪರಾಭವ ನಾಮ ಸಂವತ್ಸರದ ಆಷಾಢ ಮಾಸ ಶುಕ್ಲ
+                    ಪಕ್ಷ ಪೂರ್ಣಿಮಾ ದಿನಾಂಕ – 29.07.2026.</div>
+
+                  <!-- Chairperson row (always visible, contenteditable) -->
+                  <div class="notice-field-row" id="pv-chairperson-row">
+                    <strong id="pv-lbl-chairperson">ಅಧ್ಯಕ್ಷತೆ –</strong>
+                    <span id="pv-chairperson" class="notice-underline-text" contenteditable="true" spellcheck="false"
+                      data-placeholder="ಅಧ್ಯಕ್ಷರ ಹೆಸರು ನಮೂದಿಸಿ"></span>
+                  </div>
+
+                  <!-- Venue row (always visible, contenteditable) -->
+                  <div class="notice-field-row" id="pv-venue-row">
+                    <strong id="pv-lbl-venue">ಸ್ಥಳ –</strong>
+                    <span id="pv-venue" contenteditable="true" spellcheck="false"
+                      data-placeholder="ಸಭಾಗೃಹ/ಸ್ಥಳದ ಹೆಸರು"></span>
+                  </div>
+
+                  <!-- Date/Time row (always visible, contenteditable) -->
+                  <div class="notice-field-row" id="pv-datetime-row">
+                    <strong id="pv-lbl-date">ದಿನಾಂಕ –</strong>
+                    <span id="pv-date" contenteditable="true" spellcheck="false"
+                      data-placeholder="DD.MM.YYYY"></span>&nbsp;&nbsp;
+                    <strong id="pv-lbl-time">ಸಮಯ –</strong>
+                    <span id="pv-time" contenteditable="true" spellcheck="false" data-placeholder="ಸಂಜೆ 6:00"></span>
+                  </div>
+
+                  <!-- Attendees (editable list) -->
+                  <div class="notice-attendees" id="pv-attendees-wrap">
+                    <div id="pv-lbl-attendees" class="notice-att-label" contenteditable="true" spellcheck="false">ಉಪಸ್ಥಿತಿ –</div>
+                    <ul id="pv-attendees-items" contenteditable="true" spellcheck="false" style="margin:4px 0 0; padding-left:24px;">
+                      <li>ಅತಿಥಿ ಗಣ್ಯರ ಹೆಸರು</li>
+                    </ul>
+                  </div>
+
+                  <!-- Instructions (editable list) -->
+                  <div class="notice-instructions" id="pv-notices-wrap">
+                    <ul id="pv-notices-items" contenteditable="true" spellcheck="false" style="margin:4px 0 0; padding-left:20px; list-style-type: '* ';">
+                      <li class="notice-inst-item">ಕಾರ್ಯಕ್ರಮ ಸಮಯಕ್ಕೆ ಸರಿಯಾಗಿ ಪ್ರಾರಂಭವಾಗಲಿರುವುದರಿಂದ ತಾವೆಲ್ಲರೂ ದಯಮಾಡಿ 10 ನಿಮಿಷ ಮುಂಚಿತವಾಗಿ ಬಂದು ಆಸೀನರಾಗಬೇಕಾಗಿ ಕೋರಿಕೆ.</li>
+                      <li class="notice-inst-item">ಶುಭ್ರ ಭಾರತೀಯ ಸಾಂಪ್ರದಾಯಿಕ ಉಡುಪಿನಲ್ಲಿ ಬರುವುದು ಅಪೇಕ್ಷಿತ.</li>
+                      <li class="notice-inst-item">ಕಾರ್ಯಕ್ರಮ ನಡೆಯುವಾಗ ತಮ್ಮ ಸಂಚಾರಿ ದೂರವಾಣಿಗಳನ್ನು ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಿರುವುದು ಅಪೇಕ್ಷಣೀಯ.</li>
+                      <li class="notice-inst-item">ಕಾರ್ಯಕ್ರಮದ ನಂತರ ಪ್ರಸಾದ ವಿನಿಯೋಗವಿರುತ್ತದೆ.</li>
+                    </ul>
+                  </div>
+
+                  <!-- Footer -->
+                  <div class="notice-footer-row">
+                    <div class="notice-contact-box" id="pv-contact-wrap" style="display:none;">
+                      <div id="pv-lbl-contact" class="contact-label">ಮಾಹಿತಿಗಾಗಿ ಸಂಪರ್ಕಿಸಿ:</div>
+                      <div id="pv-contact" contenteditable="true" spellcheck="false"
+                        data-placeholder="ಸಂಪರ್ಕ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ"></div>
+                    </div>
+                    <div class="notice-footer-text">
+                      <div id="pv-org-footer" contenteditable="true" spellcheck="false"
+                        data-placeholder="ಇಲ್ಲಿ ಇಷೂಯಿಂಗ್ ಸಂಸ್ಥೆಯ ಹೆಸರು ನಮೂದಿಸಿ">ಅಧ್ಯಕ್ಷರು ಹಾಗೂ ಕಾರ್ಯಕಾರಿ ಸಮಿತಿ,<br>ಶ್ರೀ
+                        ಶಂಕರ ತತ್ತ್ವ ಪ್ರಸಾರ ಅಭಿಯಾನ, ಕೋಲಾರ</div>
+                      <div id="pv-closing" style="margin-top:8px; font-size:14px;" contenteditable="true"
+                        spellcheck="false" data-placeholder="ಆಮಂತ್ರಣ ಸಾಲುಗಳು">ತಮಗೆಲ್ಲರಿಗೂ ಆತ್ಮೀಯ ಆಮಂತ್ರಣ.</div>
+                    </div>
+                  </div>
+                </div><!-- /notice-body -->
+
+              </div><!-- /inner-border -->
+            </div><!-- /outer-border -->
+          </div><!-- /#notice-preview -->
+        </div><!-- /preview-panel -->
+  </div><!-- /layout -->
+  </section>
+  </main>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="js/app.js"></script>
+  <script>
+    // ─── State & Multilingual Templates ─────────────────────────
+    const NOTICE_TEMPLATES = {
+      kn: {
+        name: 'ಕನ್ನಡ (KN)',
+        salutationHeader: '|| ವಂದೇ ಗುರು ಪರಂಪರಾಮ್ ||',
+        benediction: 'ಶ್ರೀಮತ್ಪರಮಹಂಸೇತ್ಯಾದಿ ಸಮಸ್ತ ಬಿರುದಾವಳಿ ವಿರಾಜಮಾನರಾದ ಶೃಂಗೇರಿ ದಕ್ಷಿಣಾಮ್ನಾಯ ಶ್ರೀ ಶಾರದಾ ಪೀಠಾಧೀಶ್ವರ ಪರಮಪೂಜ್ಯ ಜಗದ್ಗುರು<br>ಶ್ರೀ ಶ್ರೀ ಭಾರತೀತೀರ್ಥ ಮಹಾಸ್ವಾಮಿಗಳವರ ಹಾಗೂ ತತ್ಕರಕಮಲಸಂಜಾತ ಜಗದ್ಗುರು ಶ್ರೀ ಶ್ರೀ ವಿಧುಶೇಖರಭಾರತೀ ಸ್ವಾಮಿಗಳವರ ಪರಮಾನುಗ್ರಹದಿಂದ',
+        orgName: 'ಶ್ರೀ ಶಂಕರ ತತ್ತ್ವ ಪ್ರಸಾರ ಅಭಿಯಾನ,',
+        peetham: 'ಶ್ರೀ ಶ್ರೀ ಜಗದ್ಗುರು ಶಂಕರಾಚಾರ್ಯ ಮಹಾಸಂಸ್ಥಾನ, ದಕ್ಷಿಣಾಮ್ನಾಯ ಶ್ರೀ ಶಾರದಾ ಪೀಠ, ಶೃಂಗೇರಿ',
+        subOrg: 'ಕೋಲಾರ ತಾಲ್ಲೂಕು ಸಮಿತಿ ಹಾಗೂ ಕೋಲಾರ ಶೃಂಗೇರಿ ಶ್ರೀಶಂಕರ ಮಠ ಇವರ ಸಹಯೋಗದೊಂದಿಗೆ',
+        eventTypes: [
+          { value: 'ಗುರು ಭಜನೋತ್ಸವ', label: 'ಭಜನೆ (Bhajan)' },
+          { value: 'ಶಾಸ್ತ್ರೀಯ ಸಂಗೀತ', label: 'ಶಾಸ್ತ್ರೀಯ ಸಂಗೀತ (Classical Music)' },
+          { value: 'ಸಂಗೀತ ಕಚೇರಿ', label: 'ಸಂಗೀತ ಕಚೇರಿ (Musical Concert)' },
+          { value: 'ವೀಣಾ ವಾದನ', label: 'ವೀಣಾ ವಾದನ (Veena Recital)' },
+          { value: 'ವೇದ ಪಾರಾಯಣ', label: 'ವೇದ ಪಾರಾಯಣ (Veda Parayana)' },
+          { value: 'Other', label: 'ಇತರೆ (Other)' }
+        ],
+        titlePrefix: 'ಗುರು ಪೂರ್ಣಿಮಾ ನಿಮಿತ್ತ ಗುರು ಪಾದುಕಾ ಪೂಜೆ, ಗುರು ಸಪರ್ಯ ಮತ್ತು',
+        titleSuffix: 'ಕಾರ್ಯಕ್ರಮ',
+        salutation: 'ಮಾನ್ಯರೇ,',
+        desc: 'ಸ್ವಸ್ತಿಶ್ರೀ ಪರಾಭವ ನಾಮ ಸಂವತ್ಸರದ ಆಷಾಢ ಮಾಸ ಶುಕ್ಲ ಪಕ್ಷ ಪೂರ್ಣಿಮಾ ದಿನಾಂಕ – 29.07.2026.',
+        lblChairperson: 'ಅಧ್ಯಕ್ಷತೆ –',
+        chairpersonPlaceholder: 'ಅಧ್ಯಕ್ಷರ ಹೆಸರು ನಮೂದಿಸಿ',
+        defaultChairperson: 'ಶ್ರೀ ಹೆಚ್. ಎಸ್. ಕೃಷ್ಣೇಗೌಡ, ಅಧ್ಯಕ್ಷರು',
+        lblVenue: 'ಸ್ಥಳ –',
+        venuePlaceholder: 'ಸಭಾಗೃಹ/ಸ್ಥಳದ ಹೆಸರು',
+        defaultVenue: 'ಶ್ರೀ ಶಂಕರ ಮಠ, ಕೋಲಾರ',
+        lblDate: 'ದಿನಾಂಕ –',
+        lblTime: 'ಸಮಯ –',
+        defaultTime: 'ಸಂಜೆ 6:00',
+        lblAttendees: 'ಉಪಸ್ಥಿತಿ –',
+        attendees: [
+          'ಡಾ. ಎಚ್. ಎಸ್. ರಾಮಸ್ವಾಮಿ, ಮುಖ್ಯ ಅತಿಥಿಗಳು',
+          'ವಿದ್ವಾನ್ ಶ್ರೀ ಗಣೇಶ ಭಟ್, ಪ್ರವಚನಕಾರರು'
+        ],
+        notices: [
+          'ಕಾರ್ಯಕ್ರಮ ಸಮಯಕ್ಕೆ ಸರಿಯಾಗಿ ಪ್ರಾರಂಭವಾಗಲಿರುವುದರಿಂದ ತಾವೆಲ್ಲರೂ ದಯಮಾಡಿ 10 ನಿಮಿಷ ಮುಂಚಿತವಾಗಿ ಬಂದು ಆಸೀನರಾಗಬೇಕಾಗಿ ಕೋರಿಕೆ.',
+          'ಶುಭ್ರ ಭಾರತೀಯ ಸಾಂಪ್ರದಾಯಿಕ ಉಡುಪಿನಲ್ಲಿ ಬರುವುದು ಅಪೇಕ್ಷಿತ.',
+          'ಕಾರ್ಯಕ್ರಮ ನಡೆಯುವಾಗ ತಮ್ಮ ಸಂಚಾರಿ ದೂರವಾಣಿಗಳನ್ನು ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಿರುವುದು ಅಪೇಕ್ಷಣೀಯ.',
+          'ಕಾರ್ಯಕ್ರಮದ ನಂತರ ಪ್ರಸಾದ ವಿನಿಯೋಗವಿರುತ್ತದೆ.'
+        ],
+        lblContact: 'ಮಾಹಿತಿಗಾಗಿ ಸಂಪರ್ಕಿಸಿ:',
+        orgFooter: 'ಅಧ್ಯಕ್ಷರು ಹಾಗೂ ಕಾರ್ಯಕಾರಿ ಸಮಿತಿ,\nಶ್ರೀ ಶಂಕರ ತತ್ತ್ವ ಪ್ರಸಾರ ಅಭಿಯಾನ, ಕೋಲಾರ',
+        closing: 'ತಮಗೆಲ್ಲರಿಗೂ ಆತ್ಮೀಯ ಆಮಂತ್ರಣ.'
+      },
+      sa: {
+        name: 'संस्कृतम् (SA)',
+        salutationHeader: '|| वन्दे गुरुपरम्पराम् ||',
+        benediction: 'श्रीमत्परमहंसपरिव्राजकाचार्यवर्यपदवाक्यप्रमाणपारावारपारीण यम-नियमाद्यष्टाङ्गयोगनिरत श्रीमद्दक्षिणाम्नाय शृङ्गेरी श्रीशारदापीठाधीश्वर जगद्गुरु<br>श्रीश्रीभारतीतर्थिमहास्वामिनां तत्करकमलसञ्जात जगद्गुरु श्रीश्रीविधुशेखरभारतीस्वामिनां च परमानुग्रहेण',
+        orgName: 'श्रीशङ्करतत्त्वप्रसारअभियानम्,',
+        peetham: 'श्री श्री जगद्गुरु शङ्कराचार्य महासंस्थानम्, दक्षिणाम्नाय श्रीशारदापीठम्, शृङ्गेरी',
+        subOrg: 'कोलार जनपदसमितिः तथा कोलार शृङ्गेरी श्रीशङ्करमठस्य च सहभागेन',
+        eventTypes: [
+          { value: 'गुरुभजनोत्सवः', label: 'भजनोत्सवः (Bhajan)' },
+          { value: 'शास्त्रीयसङ्गीतम्', label: 'शास्त्रीयसङ्गीतम् (Classical Music)' },
+          { value: 'सङ्गीतगोष्ठी', label: 'सङ्गीतगोष्ठी (Musical Concert)' },
+          { value: 'वीणावादनम्', label: 'वीणावादनम् (Veena Recital)' },
+          { value: 'वेदपारायणम्', label: 'वेदपारायणम् (Veda Parayana)' },
+          { value: 'Other', label: 'अन्यत् (Other)' }
+        ],
+        titlePrefix: 'गुरुपूर्णिमानिमित्तं गुरुपादुकापूजा, गुरूसपर्या तथा',
+        titleSuffix: 'कार्यक्रमः',
+        salutation: 'मान्याः,',
+        desc: 'स्वस्तिश्री पराभवनामसंवत्सरे आषाढमासे शुक्लपक्षे पूर्णिमातिथौ दिनाङ्के – 29.07.2026.',
+        lblChairperson: 'अध्यक्षता –',
+        chairpersonPlaceholder: 'अध्यक्षनाम प्रविशतु',
+        defaultChairperson: 'श्रीकृष्णैगौडमहोदयाः, अध्यक्षाः',
+        lblVenue: 'स्थानम् –',
+        venuePlaceholder: 'सभागृहस्य / स्थानस्य नाम',
+        defaultVenue: 'श्रीशङ्करमठः, कोलार',
+        lblDate: 'दिनाङ्कः –',
+        lblTime: 'समयः –',
+        defaultTime: 'सायङ्काले ६:००',
+        lblAttendees: 'उपस्थितिः –',
+        attendees: [
+          'डा. एच्. एस्. रामस्वामिमहोदयाः, मुख्यातिथयः',
+          'विद्वान् श्रीगणेशभट्टमहोदयाः, प्रवचनकाराः'
+        ],
+        notices: [
+          'कार्यक्रमः समयेनैव आरप्स्यते अतः भवन्तः दश निमेषाभ्यन्तरे आगम्य उपविशन्तु इति सविनयं प्रार्थ्यते।',
+          'शुभ्रभारतीयपारम्परिकवेषेण आगन्तव्यम्।',
+          'कार्यक्रमकाले स्वचलदूरभाषयन्त्राणि मौने स्थापनीयानि इति निवेद्यते।',
+          'कार्यक्रमानन्तरं महाप्रसादविनियोगः भविष्यति।'
+        ],
+        lblContact: 'सम्पर्काय:',
+        orgFooter: 'अध्यक्षाः तथा कार्यकारिणी समितिः,\nश्रीशङ्करतत्त्वप्रसारअभियानम्, कोलार',
+        closing: 'सर्वेषां हार्दं स्वागतम्।'
+      },
+      en: {
+        name: 'English (EN)',
+        salutationHeader: '|| Vande Guru Paramparam ||',
+        benediction: 'By the divine blessings of Jagadguru Shankaracharya Sri Sri Bharati Tirtha Mahaswamiji and Jagadguru Sri Sri Vidhushekhara Bharati Sannidhanam<br>Dakshinamnaya Sri Sharada Peetham, Sringeri',
+        orgName: 'Sri Shankara Tattva Prasara Abhiyana,',
+        peetham: 'Sri Sri Jagadguru Shankaracharya Mahasamsthanam, Dakshinamnaya Sri Sharada Peetham, Sringeri',
+        subOrg: 'In association with Kolar Taluk Committee and Kolar Sringeri Shankara Math',
+        eventTypes: [
+          { value: 'Guru Bhajanotsavam', label: 'Guru Bhajanotsavam (Bhajan)' },
+          { value: 'Carnatic Classical Music', label: 'Carnatic Classical Music' },
+          { value: 'Musical Concert', label: 'Musical Concert' },
+          { value: 'Veena Recital', label: 'Veena Recital' },
+          { value: 'Veda Parayanam', label: 'Veda Parayanam' },
+          { value: 'Other', label: 'Other' }
+        ],
+        titlePrefix: 'On the auspicious occasion of Guru Purnima, Guru Paduka Puja, Guru Saparya and',
+        titleSuffix: 'Programme',
+        salutation: 'Respected Devotees,',
+        desc: 'On the auspicious occasion of Ashadha Shukla Purnima in Svasti Sri Parabhava Samvatsara, dated 29.07.2026.',
+        lblChairperson: 'Presided by –',
+        chairpersonPlaceholder: 'Enter Chairperson Name',
+        defaultChairperson: 'Sri H. S. Krishnegowda, President',
+        lblVenue: 'Venue –',
+        venuePlaceholder: 'Auditorium / Venue Name',
+        defaultVenue: 'Sri Sringeri Shankara Math, Kolar',
+        lblDate: 'Date –',
+        lblTime: 'Time –',
+        defaultTime: '6:00 PM',
+        lblAttendees: 'Dignitaries Present –',
+        attendees: [
+          'Dr. H. S. Ramaswamy, Chief Guest',
+          'Vidwan Sri Ganesha Bhat, Discourse Speaker'
+        ],
+        notices: [
+          'Devotees are cordially requested to arrive and be seated 10 minutes prior to scheduled commencement.',
+          'Traditional and dignified Indian attire is appreciated.',
+          'Kindly switch off or keep mobile phones in silent mode during the proceedings.',
+          'Mahaprasadam will be distributed following the programme.'
+        ],
+        lblContact: 'For Inquiries Contact:',
+        orgFooter: 'President and Executive Committee,\nSri Shankara Tattva Prasara Abhiyana, Kolar',
+        closing: 'Cordially inviting you all.'
+      }
+    };
+
+    let currentNoticeLang = 'kn';
+    let attendees = [...NOTICE_TEMPLATES.kn.attendees];
+    let notices = [...NOTICE_TEMPLATES.kn.notices];
+    let editingId = null;
+
+    // Helper to check if a value matches default in ANY language template
+    function isDefaultVal(val, key) {
+      if (!val) return true;
+      const vTrim = String(val).trim();
+      return ['kn', 'sa', 'en'].some(l => {
+        const item = NOTICE_TEMPLATES[l][key];
+        return item && (String(item).trim() === vTrim);
+      });
+    }
+
+    function areDefaultAttendees(arr) {
+      if (!arr || !arr.length) return true;
+      const json = JSON.stringify(arr);
+      return ['kn', 'sa', 'en'].some(l => JSON.stringify(NOTICE_TEMPLATES[l].attendees) === json) || (arr.length === 1 && arr[0] === 'ಅತಿಥಿ ಗಣ್ಯರ ಹೆಸರು');
+    }
+
+    function areDefaultNotices(arr) {
+      if (!arr || !arr.length) return true;
+      const json = JSON.stringify(arr);
+      return ['kn', 'sa', 'en'].some(l => JSON.stringify(NOTICE_TEMPLATES[l].notices) === json);
+    }
+
+    function selectNoticeLanguage(lang, forceOverwrite = false) {
+      if (!NOTICE_TEMPLATES[lang]) lang = 'kn';
+      currentNoticeLang = lang;
+      const tpl = NOTICE_TEMPLATES[lang];
+
+      // 1. Update button states
+      ['kn', 'sa', 'en'].forEach(l => {
+        const btn = v(`btn-lang-${l}`);
+        if (btn) btn.classList.toggle('active', l === lang);
+      });
+      const tag = v('current-notice-lang-tag');
+      if (tag) tag.textContent = tpl.name;
+
+      // 2. Update Header in Preview
+      if (v('pv-salutation-header')) v('pv-salutation-header').textContent = tpl.salutationHeader;
+      if (v('pv-benediction')) v('pv-benediction').innerHTML = tpl.benediction;
+      if (v('pv-org-name')) v('pv-org-name').textContent = tpl.orgName;
+      if (v('pv-peetham')) v('pv-peetham').textContent = tpl.peetham;
+
+      // 3. Update preview labels
+      if (v('pv-lbl-chairperson')) v('pv-lbl-chairperson').textContent = tpl.lblChairperson;
+      if (v('pv-lbl-venue')) v('pv-lbl-venue').textContent = tpl.lblVenue;
+      if (v('pv-lbl-date')) v('pv-lbl-date').textContent = tpl.lblDate;
+      if (v('pv-lbl-time')) v('pv-lbl-time').textContent = tpl.lblTime;
+      if (v('pv-lbl-attendees')) v('pv-lbl-attendees').textContent = tpl.lblAttendees;
+      if (v('pv-lbl-contact')) v('pv-lbl-contact').textContent = tpl.lblContact;
+
+      // 4. Update Event Type options
+      const typeSelect = v('f-event-type');
+      if (typeSelect) {
+        typeSelect.innerHTML = tpl.eventTypes.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('');
+        typeSelect.value = tpl.eventTypes[0].value;
+        if (v('f-event-type-other-group')) v('f-event-type-other-group').style.display = 'none';
+      }
+
+      // 5. Update form inputs & placeholders if empty, matching defaults, or forceOverwrite
+      if (forceOverwrite || !fv('f-suborg') || isDefaultVal(fv('f-suborg'), 'subOrg')) {
+        if (v('f-suborg')) v('f-suborg').value = tpl.subOrg;
+      }
+      if (forceOverwrite || !fv('f-title-prefix') || isDefaultVal(fv('f-title-prefix'), 'titlePrefix')) {
+        if (v('f-title-prefix')) v('f-title-prefix').value = tpl.titlePrefix;
+      }
+      if (forceOverwrite || !fv('f-salutation') || isDefaultVal(fv('f-salutation'), 'salutation')) {
+        if (v('f-salutation')) v('f-salutation').value = tpl.salutation;
+      }
+      if (forceOverwrite || !fv('f-desc') || isDefaultVal(fv('f-desc'), 'desc')) {
+        if (v('f-desc')) v('f-desc').value = tpl.desc;
+      }
+      if (forceOverwrite || !fv('f-chairperson') || isDefaultVal(fv('f-chairperson'), 'defaultChairperson')) {
+        if (v('f-chairperson')) v('f-chairperson').value = tpl.defaultChairperson;
+      }
+      if (forceOverwrite || !fv('f-venue') || isDefaultVal(fv('f-venue'), 'defaultVenue')) {
+        if (v('f-venue')) v('f-venue').value = tpl.defaultVenue;
+      }
+      if (forceOverwrite || !fv('f-date') || !fv('f-date').trim()) {
+        if (v('f-date')) v('f-date').value = '29.07.2026';
+      }
+      if (forceOverwrite || !fv('f-time') || isDefaultVal(fv('f-time'), 'defaultTime')) {
+        if (v('f-time')) v('f-time').value = tpl.defaultTime;
+      }
+      if (forceOverwrite || !fv('f-closing') || isDefaultVal(fv('f-closing'), 'closing')) {
+        if (v('f-closing')) v('f-closing').value = tpl.closing;
+      }
+      if (forceOverwrite || !fv('f-org-footer') || isDefaultVal(fv('f-org-footer'), 'orgFooter')) {
+        if (v('f-org-footer')) v('f-org-footer').value = tpl.orgFooter;
+      }
+
+      // Update input placeholders
+      if (v('f-suborg')) v('f-suborg').placeholder = tpl.subOrg;
+      if (v('f-chairperson')) v('f-chairperson').placeholder = tpl.chairpersonPlaceholder;
+      if (v('f-venue')) v('f-venue').placeholder = tpl.venuePlaceholder;
+      if (v('f-time')) v('f-time').placeholder = tpl.defaultTime;
+
+      // Update attendees and notices
+      if (forceOverwrite || areDefaultAttendees(attendees)) {
+        attendees = [...tpl.attendees];
+      }
+      if (forceOverwrite || areDefaultNotices(notices)) {
+        notices = [...tpl.notices];
+      }
+
+      renderAttendeesForm();
+      renderAttendeesPreview();
+      renderNoticesForm();
+      renderNoticesPreview();
+      updatePreview();
+
+      if (forceOverwrite && typeof showToast === 'function') {
+        showToast(`Notice switched to ${tpl.name}!`, 'info');
+      }
+    }
+
+    // ─── Init ────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      // Pick initial language from preferredLanguage or default to Kannada
+      const initialLang = localStorage.getItem('preferredLanguage') || 'kn';
+      selectNoticeLanguage(initialLang, false);
+      attachPreviewSyncListeners();
+
+      // Listen for portal-wide language switch
+      window.addEventListener('languageChanged', (e) => {
+        const lang = e.detail?.lang;
+        if (lang && NOTICE_TEMPLATES[lang]) {
+          selectNoticeLanguage(lang, false);
+        }
+      });
+
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      if (isTier1()) {
+        document.getElementById('pending-section').style.display = '';
+        loadPendingNotices();
+      }
+      if (isTier2()) {
+        document.getElementById('my-notices-section').style.display = '';
+        loadMyNotices();
+      }
+    });
+
+    // ─── Live Preview & Form Sync ──────────────────────────────
+    function v(id) { return document.getElementById(id); }
+    function fv(id) { return (v(id)?.value || '').trim(); }
+    function pvt(id) { return (v(id)?.innerText || '').trim(); }
+
+    function toggleEventTypeOther() {
+      const type = fv('f-event-type');
+      v('f-event-type-other-group').style.display = (type === 'Other') ? '' : 'none';
+    }
+
+    function updatePreview() {
+      const tpl = NOTICE_TEMPLATES[currentNoticeLang] || NOTICE_TEMPLATES.kn;
+
+      // 1. Title: combine prefix + event type + titleSuffix
+      const prefix = fv('f-title-prefix');
+      const typeVal = fv('f-event-type');
+      const eventTypeStr = (typeVal === 'Other') ? (fv('f-event-type-other') || tpl.titleSuffix) : typeVal;
+      const titleEl = v('pv-title');
+      if (titleEl) {
+        if (prefix) {
+          titleEl.textContent = `${prefix} ${eventTypeStr} ${tpl.titleSuffix}`.replace(/\s+/g, ' ').trim();
+        } else {
+          titleEl.textContent = `${eventTypeStr} ${tpl.titleSuffix}`.replace(/\s+/g, ' ').trim();
+        }
+      }
+
+      // 2. Sub-org
+      if (v('pv-sub-org')) {
+        v('pv-sub-org').innerHTML = escHtml(fv('f-suborg')).replace(/\n/g, '<br>');
+      }
+
+      // 3. Salutation & Description
+      if (v('pv-salutation')) {
+        v('pv-salutation').textContent = fv('f-salutation') || tpl.salutation;
+      }
+      if (v('pv-desc')) {
+        v('pv-desc').textContent = fv('f-desc') || tpl.desc;
+      }
+
+      // 4. Chairperson, Venue, Date, Time
+      if (v('pv-chairperson')) {
+        v('pv-chairperson').textContent = fv('f-chairperson');
+      }
+      if (v('pv-venue')) {
+        v('pv-venue').textContent = fv('f-venue');
+      }
+      if (v('pv-date')) {
+        v('pv-date').textContent = fv('f-date');
+      }
+      if (v('pv-time')) {
+        v('pv-time').textContent = fv('f-time');
+      }
+
+      // 5. Contact
+      const contact = fv('f-contact');
+      if (v('pv-contact-wrap')) {
+        v('pv-contact-wrap').style.display = contact ? '' : 'none';
+      }
+      if (v('pv-contact')) {
+        v('pv-contact').innerHTML = escHtml(contact).replace(/\n/g, '<br>');
+      }
+
+      // 6. Org footer & Closing
+      if (v('pv-org-footer')) {
+        v('pv-org-footer').innerHTML = escHtml(fv('f-org-footer')).replace(/\n/g, '<br>');
+      }
+      if (v('pv-closing')) {
+        v('pv-closing').textContent = fv('f-closing') || 'ತಮಗೆಲ್ಲರಿಗೂ ಆತ್ಮೀಯ ಆಮಂತ್ರಣ.';
+      }
+    }
+
+    // Two-way sync: contenteditable preview -> form
+    function attachPreviewSyncListeners() {
+      const syncMap = [
+        { pvId: 'pv-title', formId: 'f-title-prefix' },
+        { pvId: 'pv-salutation', formId: 'f-salutation' },
+        { pvId: 'pv-desc', formId: 'f-desc' },
+        { pvId: 'pv-chairperson', formId: 'f-chairperson' },
+        { pvId: 'pv-venue', formId: 'f-venue' },
+        { pvId: 'pv-date', formId: 'f-date' },
+        { pvId: 'pv-time', formId: 'f-time' },
+        { pvId: 'pv-closing', formId: 'f-closing' },
+        { pvId: 'pv-org-footer', formId: 'f-org-footer' }
+      ];
+
+      syncMap.forEach(({ pvId, formId }) => {
+        const pvEl = v(pvId);
+        const formEl = v(formId);
+        if (pvEl && formEl) {
+          pvEl.addEventListener('input', () => {
+            formEl.value = pvEl.innerText.trim();
+          });
+        }
+      });
+    }
+
+    // Attendees handlers
+    function addAttendee(val = '') {
+      attendees.push(val);
+      renderAttendeesForm();
+      renderAttendeesPreview();
+    }
+
+    function removeAttendee(index) {
+      attendees.splice(index, 1);
+      if (attendees.length === 0) attendees.push('');
+      renderAttendeesForm();
+      renderAttendeesPreview();
+    }
+
+    function updateAttendee(index, val) {
+      attendees[index] = val;
+      renderAttendeesPreview();
+    }
+
+    function renderAttendeesForm() {
+      const container = v('f-attendees-container');
+      if (!container) return;
+      container.innerHTML = attendees.map((att, i) => `
+        <div style="display:flex; gap:6px; margin-bottom:6px; align-items:center;">
+          <input type="text" class="form-input" style="padding:6px 10px; font-size:12px;" value="${escHtml(att)}" placeholder="ಅತಿಥಿ ಗಣ್ಯರ ಹೆಸರು" oninput="updateAttendee(${i}, this.value)">
+          <button type="button" class="btn btn-secondary" onclick="removeAttendee(${i})" style="padding:4px 8px; font-size:12px; color:var(--danger); border-color:rgba(239,68,68,0.3);">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function renderAttendeesPreview() {
+      const ul = v('pv-attendees-items');
+      if (!ul) return;
+      const filtered = attendees.filter(a => a && a.trim());
+      if (filtered.length === 0) {
+        ul.innerHTML = '<li>ಅತಿಥಿ ಗಣ್ಯರ ಹೆಸರು</li>';
+      } else {
+        ul.innerHTML = filtered.map(a => `<li>${escHtml(a)}</li>`).join('');
+      }
+    }
+
+    // Notices handlers
+    function addNotice(val = '') {
+      notices.push(val);
+      renderNoticesForm();
+      renderNoticesPreview();
+    }
+
+    function removeNotice(index) {
+      notices.splice(index, 1);
+      if (notices.length === 0) notices.push('');
+      renderNoticesForm();
+      renderNoticesPreview();
+    }
+
+    function updateNotice(index, val) {
+      notices[index] = val;
+      renderNoticesPreview();
+    }
+
+    function renderNoticesForm() {
+      const container = v('f-notices-container');
+      if (!container) return;
+      container.innerHTML = notices.map((not, i) => `
+        <div style="display:flex; gap:6px; margin-bottom:6px; align-items:center;">
+          <input type="text" class="form-input" style="padding:6px 10px; font-size:12px;" value="${escHtml(not)}" placeholder="ಸೂಚನೆ / ನಿಯಮಾವಳಿ" oninput="updateNotice(${i}, this.value)">
+          <button type="button" class="btn btn-secondary" onclick="removeNotice(${i})" style="padding:4px 8px; font-size:12px; color:var(--danger); border-color:rgba(239,68,68,0.3);">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function renderNoticesPreview() {
+      const ul = v('pv-notices-items');
+      if (!ul) return;
+      const filtered = notices.filter(n => n && n.trim());
+      if (filtered.length === 0) {
+        ul.innerHTML = '<li class="notice-inst-item">ಕಾರ್ಯಕ್ರಮ ಸಮಯಕ್ಕೆ ಸರಿಯಾಗಿ ಪ್ರಾರಂಭವಾಗಲಿರುವುದರಿಂದ ತಾವೆಲ್ಲರೂ ದಯಮಾಡಿ 10 ನಿಮಿಷ ಮುಂಚಿತವಾಗಿ ಬಂದು ಆಸೀನರಾಗಬೇಕಾಗಿ ಕೋರಿಕೆ.</li>';
+      } else {
+        ul.innerHTML = filtered.map(n => `<li class="notice-inst-item">${escHtml(n)}</li>`).join('');
+      }
+    }
+
+    function escHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function updateStatusBadge(status) {
+      const el = v('notice-status-badge');
+      if (!status) { el.innerHTML = ''; return; }
+      el.innerHTML = getStatusBadge(status);
+    }
+
+    // ─── Collect Form Data ─────────────────────────────────────
+    function getListItems(id) {
+      return Array.from(v(id)?.querySelectorAll('li') || [])
+                  .map(li => li.innerText.trim())
+                  .filter(Boolean);
+    }
+
+    function collectFormData() {
+      const tpl = NOTICE_TEMPLATES[currentNoticeLang] || NOTICE_TEMPLATES.kn;
+      return {
+        title: pvt('pv-title') || fv('f-title-prefix'),
+        organization: v('pv-org-name')?.innerText?.trim() || tpl.orgName,
+        sub_org: fv('f-suborg'),
+        salutation: pvt('pv-salutation') || fv('f-salutation'),
+        event_description: pvt('pv-desc') || fv('f-desc'),
+        event_date: pvt('pv-date') || fv('f-date'),
+        event_time: pvt('pv-time') || fv('f-time'),
+        event_venue: pvt('pv-venue') || fv('f-venue'),
+        chairperson: pvt('pv-chairperson') || fv('f-chairperson'),
+        attendees: attendees.filter(a => a && a.trim()),
+        notices_list: notices.filter(n => n && n.trim()),
+        contact_info: fv('f-contact'),
+        footer_text: (pvt('pv-closing') || fv('f-closing')) + '\n' + (pvt('pv-org-footer') || fv('f-org-footer')),
+        state: fv('f-state'),
+        notice_language: currentNoticeLang,
+        header_image_url: ''
+      };
+    }
+
+    // ─── Submit for Approval ───────────────────────────────────
+    async function submitNotice() {
+      const token = localStorage.getItem('token');
+      if (!token) { showToast('Please login to submit a notice', 'error'); return; }
+      const data = collectFormData();
+      if (!data.title) { showToast('Please enter an event title', 'error'); return; }
+      try {
+        const btn = v('submit-btn');
+        btn.disabled = true; btn.textContent = 'Submitting...';
+        let result;
+        if (editingId) {
+          result = await apiFetch(`/event-notices/${editingId}`, { method: 'PUT', body: JSON.stringify(data) });
+          showToast('Notice updated and resubmitted for approval!', 'success');
+        } else {
+          result = await apiFetch('/event-notices', { method: 'POST', body: JSON.stringify(data) });
+          showToast(result?.status === 'approved' ? 'Notice published!' : 'Notice submitted for approval!', 'success');
+        }
+        btn.disabled = false; btn.textContent = '📤 Submit for Approval';
+        if (isTier2()) loadMyNotices();
+        if (isTier1()) loadPendingNotices();
+        if (!editingId) { editingId = result?.id || null; }
+        updateStatusBadge(result?.status || 'pending');
+      } catch (err) {
+        showToast(err.message, 'error');
+        v('submit-btn').disabled = false; v('submit-btn').textContent = '📤 Submit for Approval';
+      }
+    }
+
+    function saveAsDraft() {
+      const data = collectFormData();
+      localStorage.setItem('notice_draft', JSON.stringify({ data, attendees, notices, notice_language: currentNoticeLang }));
+      showToast('Draft saved locally!', 'success');
+    }
+
+    function resetForm() {
+      editingId = null;
+      ['f-suborg', 'f-chairperson', 'f-venue', 'f-date', 'f-time', 'f-contact'].forEach(id => {
+        if (v(id)) v(id).value = '';
+      });
+      selectNoticeLanguage(currentNoticeLang, true);
+      updateStatusBadge(null);
+    }
+
+    // ─── Load Pending (Tier 1) ─────────────────────────────────
+    async function loadPendingNotices() {
+      try {
+        const all = await apiFetch('/event-notices');
+        const pending = (all || []).filter(n => n.status === 'pending');
+        const container = v('pending-list');
+        v('pending-section').style.display = pending.length ? '' : 'none';
+        if (!pending.length) return;
+        container.innerHTML = pending.map(n => `
+          <div class="glass-panel pending-card fade-in">
+            <div class="status-row">
+              <strong style="font-size:14px;">${escHtml(n.title)}</strong>
+              ${getStatusBadge('pending')}
+            </div>
+            <div style="font-size:12px; color:var(--text-muted); margin:4px 0 10px;">
+              By: ${escHtml(n.submitter_name || 'Unknown')} · ${new Date(n.created_at).toLocaleDateString()}
+              ${n.state ? ' · ' + escHtml(n.state) : ''}
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn btn-secondary" onclick="loadNoticeIntoForm(${n.id})" style="font-size:12px; padding:6px 12px;">👁 Preview</button>
+              <button class="btn btn-primary" onclick="approveNotice(${n.id})" style="font-size:12px; padding:6px 12px;">✓ Approve</button>
+              <button class="btn btn-danger" onclick="rejectNotice(${n.id})" style="font-size:12px; padding:6px 12px;">✗ Reject</button>
+            </div>
+          </div>`).join('');
+      } catch (err) { /* ignore */ }
+    }
+
+    // ─── Load My Notices (Tier 2) ──────────────────────────────
+    async function loadMyNotices() {
+      try {
+        const all = await apiFetch('/event-notices');
+        const userId = getCurrentUser().id;
+        const mine = (all || []).filter(n => n.submitted_by === userId);
+        const container = v('my-notices-list');
+        v('my-notices-section').style.display = mine.length ? '' : 'none';
+        if (!mine.length) return;
+        container.innerHTML = mine.map(n => `
+          <div class="glass-panel" style="padding:14px; border-radius:10px;">
+            <div class="status-row" style="margin-bottom:6px;">
+              <strong>${escHtml(n.title)}</strong>
+              ${getStatusBadge(n.status)}
+            </div>
+            <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">
+              Submitted: ${new Date(n.created_at).toLocaleDateString()}
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn btn-secondary" onclick="loadNoticeIntoForm(${n.id})" style="font-size:12px; padding:5px 10px;">✏️ Edit / Preview</button>
+              ${n.status === 'approved' ? `
+                <button class="btn btn-primary" onclick="downloadPDF()" style="font-size:12px; padding:5px 10px;">⬇ PDF</button>
+                <button class="btn btn-primary" onclick="downloadPNG()" style="font-size:12px; padding:5px 10px;">🖼 PNG</button>` : ''}
+              <button class="btn btn-danger" onclick="deleteNotice(${n.id})" style="font-size:12px; padding:5px 10px;">🗑</button>
+            </div>
+          </div>`).join('');
+      } catch (err) { /* ignore */ }
+    }
+
+    // ─── Load a notice into the form ──────────────────────────
+    async function loadNoticeIntoForm(id) {
+      try {
+        const n = await apiFetch(`/event-notices/${id}`);
+        if (!n) return;
+        editingId = id;
+
+        // If notice specified a language, switch template to it
+        if (n.notice_language && NOTICE_TEMPLATES[n.notice_language]) {
+          selectNoticeLanguage(n.notice_language, false);
+        }
+
+        if (v('f-suborg')) v('f-suborg').value = n.sub_org || '';
+        if (v('f-title-prefix')) v('f-title-prefix').value = n.title || '';
+        if (v('f-salutation')) v('f-salutation').value = n.salutation || '';
+        if (v('f-desc')) v('f-desc').value = n.event_description || '';
+        if (v('f-date')) v('f-date').value = n.event_date || '';
+        if (v('f-time')) v('f-time').value = n.event_time || '';
+        if (v('f-venue')) v('f-venue').value = n.event_venue || '';
+        if (v('f-chairperson')) v('f-chairperson').value = n.chairperson || '';
+        if (v('f-contact')) v('f-contact').value = n.contact_info || '';
+        if (v('f-closing')) v('f-closing').value = n.footer_text?.split('\n')[0] || '';
+        if (v('f-org-footer')) v('f-org-footer').value = n.footer_text?.split('\n').slice(1).join('\n') || '';
+        const stateEl = v('f-state');
+        if (stateEl) stateEl.value = n.state || '';
+
+        try {
+          attendees = JSON.parse(n.attendees || '[]');
+        } catch(e) { attendees = []; }
+        try {
+          notices = JSON.parse(n.notices_list || '[]');
+        } catch(e) { notices = []; }
+
+        const tpl = NOTICE_TEMPLATES[currentNoticeLang] || NOTICE_TEMPLATES.kn;
+        if (!attendees.length) attendees = [...tpl.attendees];
+        if (!notices.length) notices = [...tpl.notices];
+
+        renderAttendeesForm();
+        renderAttendeesPreview();
+        renderNoticesForm();
+        renderNoticesPreview();
+        updatePreview();
+        updateStatusBadge(n.status);
+
+        // Scroll to preview
+        document.getElementById('notice-preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        showToast('Notice loaded into builder', 'success');
+    }
+
+    // ─── Approve / Reject ──────────────────────────────────────
+    async function approveNotice(id) {
+      try {
+        await apiFetch(`/event-notices/${id}/approve`, { method: 'POST' });
+        showToast('Notice approved and published!', 'success');
+        loadPendingNotices();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    async function rejectNotice(id) {
+      const reason = prompt('Reason for rejection (optional):');
+      if (reason === null) return;
+      try {
+        await apiFetch(`/event-notices/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) });
+        showToast('Notice rejected.', 'success');
+        loadPendingNotices();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    async function deleteNotice(id) {
+      if (!confirm('Delete this notice permanently?')) return;
+      try {
+        await apiFetch(`/event-notices/${id}`, { method: 'DELETE' });
+        showToast('Notice deleted', 'success');
+        loadMyNotices();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    // ─── Export ───────────────────────────────────────────────
+    function showSpinner(show) {
+      v('export-spinner').classList.toggle('show', show);
+    }
+
+    async function capturePreview(scale = 2) {
+      showSpinner(true);
+      const el = document.getElementById('notice-preview');
+      await new Promise(r => setTimeout(r, 200)); // let layout settle
+      const canvas = await html2canvas(el, {
+        scale: scale,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: el.offsetWidth,
+        height: el.offsetHeight
+      });
+      showSpinner(false);
+      return canvas;
+    }
+
+    async function downloadPDF() {
+      try {
+        const canvas = await capturePreview(2.5);
+        const { jsPDF } = window.jspdf;
+        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+        const pxToMm = 25.4 / 96;
+        const w = canvas.width * (25.4 / (96 * 2.5));
+        const h = canvas.height * (25.4 / (96 * 2.5));
+        const pdf = new jsPDF({ orientation: w > h ? 'landscape' : 'portrait', unit: 'mm', format: [w, h] });
+        pdf.addImage(imgData, 'JPEG', 0, 0, w, h, '', 'FAST');
+        const title = fv('f-title') || 'event-notice';
+        pdf.save(`${title.substring(0, 40).replace(/[^\w\s]/gi, '')}.pdf`);
+        showToast('PDF downloaded!', 'success');
+      } catch (err) { showToast('PDF export failed: ' + err.message, 'error'); showSpinner(false); }
+    }
+
+    async function downloadPNG() {
+      try {
+        const canvas = await capturePreview(3);
+        canvas.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          const title = fv('f-title') || 'event-notice';
+          a.download = `${title.substring(0, 40).replace(/[^\w\s]/gi, '')}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+          showToast('PNG downloaded!', 'success');
+        }, 'image/png');
+      } catch (err) { showToast('PNG export failed: ' + err.message, 'error'); showSpinner(false); }
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - SSTPA Portal</title>
+    <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ea580c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SSTPA Portal">
+  <link rel="apple-touch-icon" href="images/logo.png">
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    .auth-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .auth-box {
+      width: 100%;
+      max-width: 420px;
+      padding: 40px 32px;
+    }
+    .auth-logo {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    .auth-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      background: rgba(234, 88, 12, 0.05);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid rgba(234, 88, 12, 0.15);
+    }
+    .auth-tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 8px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: all 0.3s;
+    }
+    .auth-tab.active {
+      background: var(--primary-color);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(234, 88, 12, 0.3);
+    }
+    .auth-form {
+      display: none;
+    }
+    .auth-form.active {
+      display: block;
+    }
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .back-link:hover {
+      color: var(--primary-color);
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="glass-panel glass-card auth-box fade-in">
+      <div class="auth-logo">
+        <img src="images/logo.png" style="width:70px; height:70px; object-fit:contain; mix-blend-mode:multiply;" alt="SSTPA Logo">
+      </div>
+      
+      <!-- Login Form -->
+      <form id="login-form" class="auth-form active" onsubmit="handleLogin(event)">
+        <h2 style="margin-bottom: 20px; font-weight:700; color: var(--text-primary);">Welcome Back</h2>
+        
+        <div class="form-group">
+          <label class="form-label" for="login-username">Username or Email</label>
+          <input type="text" id="login-username" class="form-input" placeholder="Enter username/email" required autocomplete="username">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="login-password">Password</label>
+          <input type="password" id="login-password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="login-role">Login As</label>
+          <select id="login-role" class="form-select" required>
+            <option value="admin">Administrator</option>
+            <option value="state_coordinator">State Coordinator</option>
+            <option value="district_coordinator">District Coordinator</option>
+            <option value="taluk_coordinator">Taluk Coordinator</option>
+          </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px; padding: 12px;">Sign In</button>
+      </form>
+
+      <a href="index.html" class="back-link">← Back to Home Page</a>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="js/app.js"></script>
+  <script>
+    async function handleLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('login-username').value;
+      const password = document.getElementById('login-password').value;
+      const role = document.getElementById('login-role').value;
+
+      try {
+        const res = await fetch(`${window.location.origin}/api/users/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, role })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Login failed');
+
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        showToast('Login successful! Redirecting...', 'success');
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 1200);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shaankara Tattva Prasara Abhiyana</title>
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SSTPA Portal">
+  <link rel="apple-touch-icon" href="images/logo.png">
+  <style>
+    /* Split Layout Styles */
+    .landing-split-container {
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 40px;
+      min-height: 80vh;
+      align-items: center;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 110px 20px 40px 20px;
+    }
+
+    .info-section {
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 20px;
+    }
+
+    .logo-title-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .main-logo-hero {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+      mix-blend-mode: multiply;
+    }
+
+    .minimal-title {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.25;
+      background: linear-gradient(to right, var(--text-primary), var(--primary-color));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+    }
+
+    .hero-subtitle {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      max-width: 600px;
+    }
+
+    .login-section {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .login-box {
+      width: 100%;
+      max-width: 400px;
+      padding: 28px;
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--glass-glow);
+    }
+
+    @media (max-width: 900px) {
+      .landing-split-container {
+        grid-template-columns: 1fr;
+        gap: 30px;
+        padding-top: 90px;
+      }
+
+      .info-section {
+        align-items: center;
+        text-align: center;
+      }
+
+      .logo-title-wrapper {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .minimal-title {
+        text-align: center;
+        font-size: 28px;
+      }
+    }
+
+    /* Major Upcoming Event Card */
+    .event-highlight-card {
+      width: 100%;
+      max-width: 550px;
+      padding: 30px;
+      border: 1px solid rgba(234, 88, 12, 0.2);
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 15px 35px rgba(234, 88, 12, 0.08);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .event-highlight-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(to bottom, var(--primary-color), var(--secondary-color));
+    }
+
+    .event-badge {
+      background: rgba(234, 88, 12, 0.1);
+      color: var(--primary-color);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-block;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    .event-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--text-primary);
+    }
+
+    .event-meta {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .event-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Landing Nav bar styling */
+    .landing-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 75px;
+      background: rgba(255, 254, 242, 0.85);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 50px;
+      z-index: 1000;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .nav-logo-img {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+      mix-blend-mode: multiply;
+    }
+
+    .nav-logo-text {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+      align-items: center;
+    }
+
+    .nav-links a,
+    .footer-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: color var(--transition-speed);
+    }
+
+    .nav-links a:hover,
+    .footer-links a:hover {
+      color: var(--primary-color);
+    }
+
+    /* Footer styling */
+    .minimal-footer {
+      border-top: 1px solid var(--panel-border);
+      padding: 40px 20px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      list-style: none;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    /* Modal Grid layouts */
+    .modal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="landing-nav">
+    <a href="#" class="nav-logo">
+      <img src="images/logo.png" class="nav-logo-img" alt="STPA Logo">
+      <span class="nav-logo-text">STPA</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="about.html">About</a></li>
+      <li><a href="events.html">Events</a></li>
+      <li class="dropdown">
+        <a href="resources.html" class="dropbtn">Resources</a>
+        <ul class="dropdown-content">
+          <li><a href="https://www.sringeri.net/stotras" target="_blank">STOTRAS</a></li>
+          <li><a href="https://www.sringeri.net/anugraha-bhashanams" target="_blank">BENEDICTORY DISCOURSES</a></li>
+          <li><a href="https://www.sringeri.net/gallery/downloadables/panchangam" target="_blank">PANCHANGAM</a></li>
+          <li><a href="https://www.sringeri.net/gallery" target="_blank">DOWNLOADS</a></li>
+          <li><a href="https://www.sringeri.net/e-books" target="_blank">E-BOOKS</a></li>
+          <li><a href="http://bhajan.sringeri.net/" target="_blank">BHAJANS</a></li>
+          <li><a href="https://magazines.sringeri.net/" target="_blank">MAGAZINES</a></li>
+          <li><a href="https://sacredvedamanuscript.sringeri.net/" target="_blank">SACRED VEDA MANUSCRIPT</a></li>
+          <li><a href="https://advaitasharada.sringeri.net/" target="_blank">ADVAITA SHARADA</a></li>
+          <li><a href="https://puranasharada.sringeri.net/" target="_blank">PURANA SHARADA</a></li>
+        </ul>
+      </li>
+      <li><a href="https://www.sringeri.net/online-services" target="_blank">Online Services</a></li>
+      <li><a href="gallery.html">Gallery</a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li class="dropdown no-translate">
+        <a href="#" class="dropbtn" id="lang-selector-btn" onclick="return false;">🌐 Language</a>
+        <ul class="dropdown-content" style="min-width: 130px;">
+          <li><a href="#" onclick="changeLanguage('en'); return false;">English</a></li>
+          <li><a href="#" onclick="changeLanguage('kn'); return false;">ಕನ್ನಡ</a></li>
+          <li><a href="#" onclick="changeLanguage('sa'); return false;">संस्कृतम्</a></li>
+        </ul>
+      </li>
+      <li><a href="/download/apk" class="btn btn-secondary no-translate"
+          style="padding: 8px 14px; font-size:13px; border-color:#d97706; color:#d97706; text-decoration:none;"
+          download>📥
+          Download APK</a></li>
+      <li><button id="pwa-install-btn" class="btn btn-secondary no-translate" onclick="installPWA()"
+          style="padding: 8px 16px; font-size:13px; border-color:var(--primary-color); color:var(--primary-color);">📱
+          Web App</button></li>
+      <li><a href="login.html" class="btn btn-primary" style="padding: 8px 16px; font-size:13px; color:white;">Portal
+          Login</a></li>
+    </ul>
+  </nav>
+
+  <!-- MAIN MINIMAL HERO (Split Layout: Info on Left, Login on Right) -->
+  <main class="landing-split-container fade-in">
+    <!-- Left Column: Information -->
+    <div class="info-section">
+      <div class="logo-title-wrapper">
+        <img src="images/logo.png" class="main-logo-hero" alt="STPA Emblem">
+        <h1 class="minimal-title">Shaankara Tattva Prasara Abhiyana</h1>
+      </div>
+      <p class="hero-subtitle">Promoting Advaita Vedanta philosophy teachings, congregational satsangs, regional
+        coordination, and community spiritual development.</p>
+
+      <!-- Major Upcoming Event -->
+      <div class="glass-panel event-highlight-card">
+        <span class="event-badge">Major Upcoming Event</span>
+        <h2 class="event-title" id="major-event-title">Weekly Satsang & Advaita Vedanta Discourse</h2>
+        <div class="event-meta" id="major-event-meta">
+          Date: <strong>Every Sunday @ 5:00 PM</strong><br>
+          Location: <strong>Shankara Math Sanctuary</strong>
+        </div>
+        <p class="event-desc" id="major-event-desc">
+          A devotional assembly focusing on Advaita Vedanta philosophy teachings, congregational bhajans recitation, and
+          prasad distribution. Open to all volunteers.
+        </p>
+      </div>
+    </div>
+
+    <!-- Right Column: Portal Login -->
+    <div class="login-section">
+      <div class="glass-panel glass-card login-box">
+        <h2 style="font-size: 22px; font-weight:700; margin-bottom:12px; color:var(--text-primary);">Portal Login</h2>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Access your coordinator dashboard
+          to manage events, attendance, and local units.</p>
+
+        <form id="login-form" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label class="form-label" for="login-username">Username or Email</label>
+            <input type="text" id="login-username" class="form-input" placeholder="Enter username/email" required
+              autocomplete="username">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="login-password">Password</label>
+            <input type="password" id="login-password" class="form-input" placeholder="••••••••" required
+              autocomplete="current-password">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="login-role">Login As</label>
+            <select id="login-role" class="form-select" required>
+              <option value="admin">Administrator</option>
+              <option value="state_coordinator">State Coordinator</option>
+              <option value="district_coordinator">District Coordinator</option>
+              <option value="taluk_coordinator">Taluk Coordinator</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary"
+            style="width: 100%; margin-top: 15px; padding: 12px; font-size: 15px;">Sign In</button>
+          <div style="margin-top: 14px; text-align: center;">
+            <a href="/download/apk"
+              style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #d97706; text-decoration: none; font-weight: 600;"
+              download>
+              <span>📱 Download Android Mobile App (Release APK)</span>
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <!-- RECENT PHOTOS GALLERY SECTION -->
+  <section class="glass-panel glass-card fade-in" style="max-width: 1000px; margin: 40px auto; padding: 24px;">
+    <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">Event Gallery</h2>
+    <p style="font-size:14px; color:var(--text-secondary); margin-bottom:20px;">Explore recent photos from our community
+      events and spiritual discourses.</p>
+    <div id="home-gallery-grid"
+      style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+      <div style="text-align: center; color: var(--text-secondary); padding: 20px;">Loading gallery...</div>
+    </div>
+  </section>
+
+  <!-- GUEST EVENT PHOTO UPLOADER SECTION -->
+  <section class="glass-panel glass-card fade-in" style="max-width: 1000px; margin: 40px auto; padding: 24px;">
+    <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">Submit Event Photos
+    </h2>
+    <p style="font-size:14px; color:var(--text-secondary); margin-bottom:20px;">Select up to 10 photos from a local
+      event and submit them for approval to be featured in the gallery.</p>
+
+    <form id="public-photo-form" onsubmit="handlePublicPhotoSubmit(event)">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
+        <div class="form-group">
+          <label class="form-label" for="upload-event-id">Link to Event</label>
+          <select id="upload-event-id" class="form-select" required>
+            <option value="">— Select Associated Event —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="upload-title">Photo Title / Group Name</label>
+          <input type="text" id="upload-title" class="form-input" placeholder="e.g., Satsang Gathering" required>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: 8px;">
+        <label class="form-label" for="upload-desc">Description (Optional)</label>
+        <textarea id="upload-desc" class="form-textarea" rows="2"
+          placeholder="Briefly describe the photos..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="upload-files">Select Photos (Max 10 files)</label>
+        <input type="file" id="upload-files" class="form-input" accept="image/*" multiple required
+          onchange="handlePhotoSelection(event)">
+        <span id="upload-files-status"
+          style="font-size:12px; color:var(--text-muted); display:block; margin-top:6px;"></span>
+      </div>
+
+      <!-- Previews Container -->
+      <div id="photos-previews-container" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;"></div>
+
+      <button type="submit" id="photo-submit-btn" class="btn btn-primary"
+        style="margin-top: 16px; width: 100%; padding: 12px; font-size:15px;">Submit for Approval</button>
+    </form>
+  </section>
+
+  <!-- COORDINATORS LOOKUP SECTION -->
+  <section style="max-width: 650px; margin: 40px auto; padding: 0 20px;">
+    <div class="glass-panel glass-card">
+      <h2 style="font-size: 22px; font-weight:700; margin-bottom:12px; color:var(--text-primary); text-align: center;">
+        Find Regional Coordinator</h2>
+      <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; text-align: center;">Use the
+        dropdown selections below to view details and contact information of the coordinator for your local unit.</p>
+
+      <div class="form-group">
+        <label class="form-label" for="select-state">State</label>
+        <select id="select-state" class="form-select" onchange="onStateChange()">
+          <option value="">— Select State —</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="select-district">District</label>
+        <select id="select-district" class="form-select" onchange="onDistrictChange()" disabled>
+          <option value="">— Select District —</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="select-taluk">Taluk / Sub-District</label>
+        <select id="select-taluk" class="form-select" onchange="onTalukChange()" disabled>
+          <option value="">— Select Taluk —</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="select-member">Member Unit / Sabha</label>
+        <select id="select-member" class="form-select" onchange="onMemberChange()" disabled>
+          <option value="">— Select Unit —</option>
+        </select>
+      </div>
+
+      <!-- Coordinator Details Card (Initially hidden) -->
+      <div id="coordinator-details-card" class="glass-panel glass-card"
+        style="display:none; border:1px solid rgba(234, 88, 12, 0.2); background:rgba(255,255,255,0.9); margin-top:20px; padding: 16px;">
+        <h3 style="font-size: 15px; font-weight:700; margin-bottom:12px; color:var(--primary-color);">Local Coordinator
+          Profile</h3>
+        <p style="font-size:13px; margin-bottom:6px; color:var(--text-primary);"><strong>Name:</strong> <span
+            id="coord-name"></span></p>
+        <p style="font-size:13px; margin-bottom:6px; color:var(--text-primary);"><strong>Designation:</strong> <span
+            id="coord-role"></span></p>
+        <p style="font-size:13px; margin-bottom:6px; color:var(--text-primary);"><strong>Phone:</strong> <span
+            id="coord-phone"></span></p>
+        <p style="font-size:13px; margin-bottom:6px; color:var(--text-primary);"><strong>Email:</strong> <span
+            id="coord-email"></span></p>
+        <p style="font-size:13px; color:var(--text-primary); line-height:1.4; margin-bottom:0;"><strong>Office
+            Address:</strong> <span id="coord-address"></span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- MINIMAL FOOTER WITH LINKS -->
+  <footer class="minimal-footer">
+    <ul class="footer-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="events.html">Events</a></li>
+      <li><a href="resources.html">Resources</a></li>
+      <li><a href="gallery.html">Gallery</a></li>
+      <li><a href="contact.html">Contact</a></li>
+      <li><a href="login.html">Login</a></li>
+    </ul>
+    <p style="font-size: 13px; color: var(--text-muted);">&copy; 2026 Shaankara Tattva Prasara Abhiyana. All rights
+      reserved.</p>
+  </footer>
+
+  <div id="toast-container"></div>
+
+  <script src="js/app.js"></script>
+  <script src="js/location-dropdowns.js"></script>
+  <script>
+    function checkAuth() {
+      // Intentionally bypassed on index landing page
+    }
+
+    let locationData = {};
+    let coordinatorMap = {}; // key: "state|district|taluk" => [{unit_name, ...}]
+    let selectedPhotoFiles = [];
+
+    // Try to load data on page load
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Load upcoming event
+      try {
+        const events = await fetch(`${window.location.origin}/api/events/public/all`);
+        const list = await events.json();
+        if (list && list.length > 0) {
+          const upcoming = list.filter(e => new Date(e.date) >= new Date().setHours(0, 0, 0, 0))
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+          if (upcoming.length > 0) {
+            const major = upcoming[0];
+            const dateStr = new Date(major.date).toLocaleDateString(undefined, {
+              weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+            });
+            document.getElementById('major-event-title').textContent = major.title;
+            document.getElementById('major-event-meta').innerHTML = `
+              Date: <strong>${dateStr}</strong><br>
+              Location: <strong>${major.location || 'Shankara Math'}</strong>
+            `;
+            document.getElementById('major-event-desc').textContent = major.description || 'Devotional community gathering.';
+          }
+        }
+      } catch (err) {
+        console.log('Using fallback static major event (unauthenticated)');
+      }
+
+      // 2. Load recent photos
+      loadHomeGallery();
+
+      // 3. Load events list for dropdown
+      loadEventDropdown();
+
+      // 4. Load location hierarchy for coordinators
+      locationData = await loadLocationData();
+      populateStateDropdown();
+
+      // 5. Load registered coordinators list
+      try {
+        const res = await fetch(`${window.location.origin}/api/coordinators/public/all`);
+        const list = await res.json();
+        list.forEach(c => {
+          const key = `${c.state}|${c.district}|${c.taluk}`;
+          if (!coordinatorMap[key]) coordinatorMap[key] = [];
+          coordinatorMap[key].push(c);
+        });
+      } catch (e) {
+        console.warn('Could not load coordinator list from API:', e.message);
+      }
+    });
+
+    // Gallery Loader
+    window.homeGalleryPhotos = [];
+    async function loadHomeGallery() {
+      try {
+        const res = await fetch(`${window.location.origin}/api/photos/public`);
+        const list = await res.json();
+        const container = document.getElementById('home-gallery-grid');
+        if (res.ok && list && list.length > 0) {
+          window.homeGalleryPhotos = list;
+          container.innerHTML = list.map((p, idx) => `
+            <div class="glass-panel" onclick="openPhotoViewer(window.homeGalleryPhotos, ${idx})" style="border-radius:14px; overflow:hidden; display:flex; flex-direction:column; height:100%; cursor:pointer; transition:transform 0.25s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.25s;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 30px rgba(234, 88, 12, 0.2)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+              <div style="width:100%; height:170px; overflow:hidden; background:#1c1917; position:relative;">
+                <img src="${window.location.origin}${p.file_url}" alt="${p.title}" loading="lazy" style="width:100%; height:100%; object-fit:cover; transition:transform 0.35s ease;" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+                <div style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.65); color:#fffef2; font-size:11px; font-weight:600; padding:4px 9px; border-radius:14px; backdrop-filter:blur(6px); display:flex; align-items:center; gap:4px; border:1px solid rgba(255,255,255,0.15);">
+                  <span>🔍 View Info</span>
+                </div>
+              </div>
+              <div style="padding:14px; flex:1; display:flex; flex-direction:column; gap:5px;">
+                <strong style="font-size:15px; font-weight:700; color:var(--text-primary); line-height:1.3;">${p.title}</strong>
+                ${p.description ? `<p style="font-size:12.5px; color:var(--text-secondary); line-height:1.4; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">${p.description}</p>` : ''}
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:11.5px; color:var(--text-muted); margin-top:auto; padding-top:8px; border-top:1px dashed var(--panel-border);">
+                  <span>By: <strong>${p.uploader_name || 'Guest'}</strong></span>
+                  ${p.created_at ? `<span>📅 ${new Date(p.created_at).toLocaleDateString()}</span>` : ''}
+                </div>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = `
+            <div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--text-muted);" class="glass-panel">
+              No photos approved yet. Check back later!
+            </div>
+          `;
+        }
+      } catch (err) {
+        console.warn('Could not load public photos:', err.message);
+      }
+    }
+
+    // Dropdown events loader
+    async function loadEventDropdown() {
+      try {
+        const res = await fetch(`${window.location.origin}/api/events/public/all`);
+        const list = await res.json();
+        const sel = document.getElementById('upload-event-id');
+        sel.innerHTML = '<option value="">— Select Associated Event —</option>';
+        if (res.ok && list) {
+          list.forEach(evt => {
+            const dateStr = new Date(evt.date).toLocaleDateString();
+            sel.innerHTML += `<option value="${evt.id}">${evt.title} (${dateStr})</option>`;
+          });
+        }
+      } catch (err) {
+        console.warn('Could not load public events for dropdown:', err.message);
+      }
+    }
+
+    // Photo file selection and previews
+    function handlePhotoSelection(e) {
+      const files = Array.from(e.target.files);
+      const statusSpan = document.getElementById('upload-files-status');
+      const previewContainer = document.getElementById('photos-previews-container');
+
+      previewContainer.innerHTML = '';
+      selectedPhotoFiles = [];
+
+      if (files.length > 10) {
+        statusSpan.textContent = '✗ Error: You can select a maximum of 10 photos.';
+        statusSpan.style.color = 'var(--danger)';
+        e.target.value = '';
+        return;
+      }
+
+      selectedPhotoFiles = files;
+      statusSpan.textContent = `✓ Selected ${files.length} photo(s) (Max 10).`;
+      statusSpan.style.color = 'var(--success)';
+
+      files.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const div = document.createElement('div');
+          div.style.position = 'relative';
+          div.style.width = '70px';
+          div.style.height = '70px';
+          div.style.borderRadius = '8px';
+          div.style.overflow = 'hidden';
+          div.style.border = '1px solid var(--panel-border)';
+
+          const img = document.createElement('img');
+          img.src = event.target.result;
+          img.style.width = '100%';
+          img.style.height = '100%';
+          img.style.objectFit = 'cover';
+
+          div.appendChild(img);
+          previewContainer.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Submit photos logic
+    async function handlePublicPhotoSubmit(e) {
+      e.preventDefault();
+      if (selectedPhotoFiles.length === 0) {
+        showToast('Please select at least one photo', 'error');
+        return;
+      }
+      if (selectedPhotoFiles.length > 10) {
+        showToast('You can upload a maximum of 10 photos', 'error');
+        return;
+      }
+
+      const eventId = document.getElementById('upload-event-id').value;
+      const baseTitle = document.getElementById('upload-title').value;
+      const desc = document.getElementById('upload-desc').value;
+      const submitBtn = document.getElementById('photo-submit-btn');
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Uploading photos...';
+
+      let successCount = 0;
+
+      for (let i = 0; i < selectedPhotoFiles.length; i++) {
+        const file = selectedPhotoFiles[i];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+          // 1. Upload to node server
+          const uploadRes = await fetch(`${window.location.origin}/api/upload`, {
+            method: 'POST',
+            body: formData
+          });
+          const uploadData = await uploadRes.json();
+          if (!uploadRes.ok) throw new Error(uploadData.error || 'Upload failed');
+
+          // 2. Submit to guest photos api
+          const submitRes = await fetch(`${window.location.origin}/api/photos/public-submit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: selectedPhotoFiles.length > 1 ? `${baseTitle} - Photo ${i + 1}` : baseTitle,
+              description: desc,
+              file_url: uploadData.fileUrl,
+              event_id: parseInt(eventId) || null
+            })
+          });
+
+          const submitData = await submitRes.json();
+          if (!submitRes.ok) throw new Error(submitData.error || 'Submission failed');
+
+          successCount++;
+        } catch (err) {
+          console.error(`Failed uploading file ${i + 1}:`, err.message);
+        }
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit for Approval';
+
+      if (successCount === selectedPhotoFiles.length) {
+        showToast(`Successfully submitted all ${successCount} photo(s) for approval!`, 'success');
+        e.target.reset();
+        document.getElementById('photos-previews-container').innerHTML = '';
+        document.getElementById('upload-files-status').textContent = '';
+        selectedPhotoFiles = [];
+      } else if (successCount > 0) {
+        showToast(`Uploaded ${successCount} of ${selectedPhotoFiles.length} photos. Some failed.`, 'warning');
+      } else {
+        showToast('Failed to upload photos. Please try again.', 'error');
+      }
+    }
+
+    // Portal Login
+    async function handleLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('login-username').value;
+      const password = document.getElementById('login-password').value;
+      const role = document.getElementById('login-role').value;
+
+      try {
+        const res = await fetch(`${window.location.origin}/api/users/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, role })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Login failed');
+
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        showToast('Login successful! Redirecting to dashboard...', 'success');
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 1200);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    // Coordinator Location Selectors logic
+    function populateStateDropdown() {
+      const sel = document.getElementById('select-state');
+      sel.innerHTML = '<option value="">— Select State —</option>';
+      Object.keys(locationData).sort().forEach(state => {
+        sel.innerHTML += `<option value="${state}">${state}</option>`;
+      });
+    }
+
+    function onStateChange() {
+      const state = document.getElementById('select-state').value;
+      const distSel = document.getElementById('select-district');
+      const talukSel = document.getElementById('select-taluk');
+      const memberSel = document.getElementById('select-member');
+
+      distSel.innerHTML = '<option value="">— Select District —</option>';
+      talukSel.innerHTML = '<option value="">— Select Taluk —</option>';
+      memberSel.innerHTML = '<option value="">— Select Unit —</option>';
+      distSel.disabled = talukSel.disabled = memberSel.disabled = true;
+      document.getElementById('coordinator-details-card').style.display = 'none';
+
+      if (state && locationData[state]) {
+        Object.keys(locationData[state]).sort().forEach(d => {
+          distSel.innerHTML += `<option value="${d}">${d}</option>`;
+        });
+        distSel.disabled = false;
+      }
+    }
+
+    function onDistrictChange() {
+      const state = document.getElementById('select-state').value;
+      const district = document.getElementById('select-district').value;
+      const talukSel = document.getElementById('select-taluk');
+      const memberSel = document.getElementById('select-member');
+
+      talukSel.innerHTML = '<option value="">— Select Taluk —</option>';
+      memberSel.innerHTML = '<option value="">— Select Unit —</option>';
+      talukSel.disabled = memberSel.disabled = true;
+      document.getElementById('coordinator-details-card').style.display = 'none';
+
+      if (state && district && locationData[state] && locationData[state][district]) {
+        locationData[state][district].forEach(t => {
+          talukSel.innerHTML += `<option value="${t}">${t}</option>`;
+        });
+        talukSel.disabled = false;
+      }
+    }
+
+    function onTalukChange() {
+      const state = document.getElementById('select-state').value;
+      const district = document.getElementById('select-district').value;
+      const taluk = document.getElementById('select-taluk').value;
+      const memberSel = document.getElementById('select-member');
+
+      memberSel.innerHTML = '<option value="">— Select Unit —</option>';
+      memberSel.disabled = true;
+      document.getElementById('coordinator-details-card').style.display = 'none';
+
+      if (!state || !district || !taluk) return;
+
+      const key = `${state}|${district}|${taluk}`;
+      const units = coordinatorMap[key] || [];
+
+      if (units.length === 0) {
+        memberSel.innerHTML = '<option value="">(No coordinator registered yet)</option>';
+      } else {
+        units.forEach(c => {
+          memberSel.innerHTML += `<option value="${c.id}">${c.unit_name}</option>`;
+        });
+        memberSel.disabled = false;
+      }
+    }
+
+    function onMemberChange() {
+      const memberSel = document.getElementById('select-member');
+      const id = parseInt(memberSel.value);
+      const detailsCard = document.getElementById('coordinator-details-card');
+
+      let found = null;
+      for (const units of Object.values(coordinatorMap)) {
+        found = units.find(c => c.id === id);
+        if (found) break;
+      }
+
+      if (!found) { detailsCard.style.display = 'none'; return; }
+
+      document.getElementById('coord-name').textContent = found.coordinator_name || '—';
+      document.getElementById('coord-role').textContent = found.role || '—';
+      document.getElementById('coord-phone').textContent = found.phone || '—';
+      document.getElementById('coord-email').textContent = found.email || '—';
+      document.getElementById('coord-address').textContent = found.address || '—';
+      detailsCard.style.display = 'block';
+    }
+  </script>
+</body>
+
+</html>

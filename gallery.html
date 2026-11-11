@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gallery - STPA Portal</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ea580c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="STPA Portal">
+  <link rel="apple-touch-icon" href="images/logo.png">
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .photo-card {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-radius: 12px;
+      position: relative;
+    }
+
+    .photo-img-wrap {
+      width: 100%;
+      aspect-ratio: 4/3;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.04);
+      position: relative;
+      cursor: pointer;
+    }
+
+    .photo-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .photo-card:hover .photo-img-wrap img {
+      transform: scale(1.05);
+    }
+
+    .photo-img-wrap::after {
+      content: '🔍';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      font-size: 32px;
+      background: rgba(0, 0, 0, 0.55);
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .photo-img-wrap:hover::after {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+
+    .photo-body {
+      padding: 14px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .photo-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    .section-divider {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f59e0b;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── Lightbox ── */
+    #lightbox-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(0, 0, 0, 0.92);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      backdrop-filter: blur(6px);
+    }
+
+    #lightbox-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    #lightbox-inner {
+      position: relative;
+      max-width: 92vw;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    #lightbox-img-wrap {
+      position: relative;
+      max-width: 88vw;
+      max-height: 78vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #lightbox-img {
+      max-width: 88vw;
+      max-height: 78vh;
+      border-radius: 12px;
+      box-shadow: 0 8px 48px rgba(0, 0, 0, 0.7);
+      object-fit: contain;
+      transform: scale(0.92);
+      transition: transform 0.25s ease;
+    }
+
+    #lightbox-overlay.active #lightbox-img {
+      transform: scale(1);
+    }
+
+    #lightbox-close {
+      position: fixed;
+      top: 18px;
+      right: 22px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      font-size: 26px;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      z-index: 10000;
+    }
+
+    #lightbox-close:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .lb-nav-btn {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      font-size: 22px;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.2s;
+      z-index: 10000;
+    }
+
+    .lb-nav-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    #lb-prev {
+      left: 16px;
+    }
+
+    #lb-next {
+      right: 16px;
+    }
+
+    #lb-prev:hover {
+      transform: translateY(-50%) translateX(-3px);
+    }
+
+    #lb-next:hover {
+      transform: translateY(-50%) translateX(3px);
+    }
+
+    #lb-prev:disabled,
+    #lb-next:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    #lightbox-caption {
+      text-align: center;
+      color: #fff;
+    }
+
+    #lightbox-caption strong {
+      font-size: 16px;
+      display: block;
+    }
+
+    #lightbox-caption span {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    #lb-counter {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 2px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-container">
+    <div id="sidebar-placeholder" class="sidebar glass-panel"></div>
+
+    <main class="main-content">
+      <header id="header-placeholder" class="main-header"></header>
+
+      <section style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;"
+        class="fade-in">
+        <div>
+          <h2 style="font-size: 22px; font-weight:700;">Photo Gallery</h2>
+          <p id="gallery-subtitle" style="font-size:13px; color:var(--text-secondary); margin-top:4px;"></p>
+        </div>
+        <button id="upload-photo-btn" class="btn btn-primary" onclick="openUploadModal()" style="display:none;">+ Upload
+          Photo</button>
+      </section>
+
+      <!-- Tier 1: Pending Photos -->
+      <section id="pending-photos-section" style="display:none;" class="fade-in">
+        <p class="section-divider">⏳ Pending Photo Approvals</p>
+        <div id="pending-photos-grid" class="photo-grid"></div>
+      </section>
+
+      <!-- Public / Approved Gallery -->
+      <section class="fade-in">
+        <p id="gallery-section-label"
+          style="font-size:15px; font-weight:700; color:var(--text-secondary); margin-bottom:16px;">Approved Photos</p>
+        <div id="gallery-grid" class="photo-grid">
+          <div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-secondary);">
+            Loading gallery...
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Upload Photo Modal -->
+  <div id="upload-photo-modal" class="modal-overlay">
+    <div class="glass-panel modal-content">
+      <div class="modal-header">
+        <h2 style="font-weight:700; font-size:20px;">Upload Photo</h2>
+        <button onclick="closeModal('upload-photo-modal')"
+          style="background:none; border:none; color:var(--text-secondary); font-size:24px; cursor:pointer;">&times;</button>
+      </div>
+      <form onsubmit="handlePhotoUpload(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="photo-title">Photo Title</label>
+            <input type="text" id="photo-title" class="form-input" placeholder="e.g., Diwali Celebration 2025" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="photo-desc">Description (Optional)</label>
+            <textarea id="photo-desc" class="form-textarea" rows="2"
+              placeholder="Briefly describe the photo..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="photo-file">Choose Image File</label>
+            <input type="file" id="photo-file" class="form-input" accept="image/*" onchange="uploadPhotoFile(event)"
+              required>
+            <input type="hidden" id="photo-file-url">
+            <span id="photo-upload-status"
+              style="font-size:12px; color:var(--text-muted); display:block; margin-top:4px;"></span>
+          </div>
+          <div id="photo-preview-wrap" style="display:none; margin-top:8px;">
+            <img id="photo-preview-img" src="" alt="Preview"
+              style="max-width:100%; border-radius:8px; max-height:200px; object-fit:cover;">
+          </div>
+          <div id="photo-tier2-notice"
+            style="display:none; padding:10px 14px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:8px; font-size:13px; color:#f59e0b; margin-top:12px;">
+            ⚠️ Uploaded photos will be reviewed by Admin/State Coordinator before appearing in the gallery.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('upload-photo-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Upload Photo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Lightbox Popup -->
+  <div id="lightbox-overlay" role="dialog" aria-modal="true" aria-label="Photo Viewer"
+    onclick="handleLightboxOverlayClick(event)">
+    <button id="lightbox-close" onclick="closeLightbox()" title="Close (Esc)">✕</button>
+    <button id="lb-prev" class="lb-nav-btn" onclick="lightboxNav(-1)" title="Previous">&#8249;</button>
+    <div id="lightbox-inner">
+      <div id="lightbox-img-wrap">
+        <img id="lightbox-img" src="" alt="">
+      </div>
+      <div id="lightbox-caption">
+        <strong id="lb-title"></strong>
+        <span id="lb-desc"></span>
+        <div id="lb-counter"></div>
+      </div>
+    </div>
+    <button id="lb-next" class="lb-nav-btn" onclick="lightboxNav(1)" title="Next">&#8250;</button>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        document.getElementById('upload-photo-btn').style.display = '';
+        if (isTier2()) {
+          document.getElementById('gallery-subtitle').textContent = 'Uploaded photos are reviewed before appearing publicly.';
+          document.getElementById('photo-tier2-notice').style.display = '';
+        }
+        if (isTier1()) {
+          document.getElementById('pending-photos-section').style.display = '';
+          loadPendingPhotos();
+        }
+      }
+      loadGallery();
+    });
+
+    async function loadPendingPhotos() {
+      try {
+        const all = await apiFetch('/photos');
+        const pending = (all || []).filter(p => p.status === 'pending');
+        const container = document.getElementById('pending-photos-grid');
+        if (!pending.length) { document.getElementById('pending-photos-section').style.display = 'none'; return; }
+        container.innerHTML = pending.map(p => renderPhotoCard(p, true)).join('');
+      } catch (err) { /* ignore */ }
+    }
+
+    async function loadGallery() {
+      try {
+        const token = localStorage.getItem('token');
+        const endpoint = token ? '/photos' : '/photos/public';
+        const currentUser = getCurrentUser();
+        const userId = currentUser ? currentUser.id : null;
+
+        // Approved + own pending (for Tier 2)
+        const items = (all || []).filter(p =>
+          p.status === 'approved' ||
+          (token && isTier2() && p.uploaded_by === userId && p.status !== 'approved')
+        );
+
+        window.allGalleryItems = items;
+        const container = document.getElementById('gallery-grid');
+        if (!items.length) {
+          container.innerHTML = `
+            <div style="grid-column:1/-1; text-align:center; padding:60px; color:var(--text-secondary);" class="glass-panel">
+              <p style="font-size:40px; margin-bottom:16px;">🖼️</p>
+              <p style="font-size:18px; font-weight:500;">No photos in the gallery yet.</p>
+              <p style="font-size:13px; margin-top:8px;">${token ? 'Click "+ Upload Photo" to add the first photo.' : 'Check back later for photos.'}</p>
+            </div>`;
+          return;
+        }
+        container.innerHTML = items.map((p, idx) => renderPhotoCard(p, false, idx)).join('');
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    function renderPhotoCard(photo, isPending, idx = 0) {
+      const fileUrl = `${window.location.origin}${photo.file_url}`;
+      const dateStr = new Date(photo.created_at).toLocaleDateString();
+      const uploader = photo.uploader_name || 'Unknown';
+      const statusBadge = getStatusBadge(photo.status || 'approved');
+      const userId = getCurrentUser().id;
+      const canEdit = isTier1() || photo.uploaded_by === userId;
+      const token = localStorage.getItem('token');
+
+      let actionBtns = '';
+      if (isPending && isTier1()) {
+        actionBtns = `
+          <button class="btn btn-primary" onclick="approvePhoto(${photo.id})" style="flex:1; font-size:12px; padding:6px;">✓ Approve</button>
+          <button class="btn btn-danger" onclick="rejectPhoto(${photo.id})" style="flex:1; font-size:12px; padding:6px;">✗ Reject</button>`;
+      } else if (canEdit && token) {
+        actionBtns = `<button class="btn btn-danger" onclick="deletePhoto(${photo.id})" style="flex:1; font-size:12px; padding:6px;">Delete</button>`;
+      }
+
+      return `
+        <div class="glass-panel photo-card fade-in">
+          <div class="photo-img-wrap" onclick="openPhotoViewer(window.allGalleryItems || [${JSON.stringify(photo).replace(/"/g, '&quot;')}], ${idx})">
+            <img src="${fileUrl}" alt="${photo.title}" loading="lazy" onerror="this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);\\'>🖼️ No Preview</div>'">
+          </div>
+          <div class="photo-body">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong style="font-size:15px; cursor:pointer;" onclick="openPhotoViewer(window.allGalleryItems || [${JSON.stringify(photo).replace(/"/g, '&quot;')}], ${idx})">${photo.title}</strong>
+              ${photo.status && photo.status !== 'approved' ? statusBadge : ''}
+            </div>
+            ${photo.description ? `<p style="font-size:13px; color:var(--text-secondary); cursor:pointer;" onclick="openPhotoViewer(window.allGalleryItems || [${JSON.stringify(photo).replace(/"/g, '&quot;')}], ${idx})">${photo.description}</p>` : ''}
+            <div style="font-size:11px; color:var(--text-muted);">By: ${uploader} · ${dateStr}</div>
+            ${actionBtns ? `<div class="photo-actions">${actionBtns}</div>` : ''}
+          </div>
+        </div>`;
+    }
+
+    function openUploadModal() {
+      document.querySelector('#upload-photo-modal form').reset();
+      document.getElementById('photo-file-url').value = '';
+      document.getElementById('photo-upload-status').textContent = '';
+      document.getElementById('photo-preview-wrap').style.display = 'none';
+      openModal('upload-photo-modal');
+    }
+
+    async function uploadPhotoFile(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const statusSpan = document.getElementById('photo-upload-status');
+      statusSpan.textContent = 'Uploading...';
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${window.location.origin}/api/upload`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Upload failed');
+        document.getElementById('photo-file-url').value = data.fileUrl;
+        statusSpan.textContent = '✓ Uploaded!';
+        statusSpan.style.color = 'var(--success)';
+        // Preview
+        const preview = document.getElementById('photo-preview-img');
+        preview.src = `${window.location.origin}${data.fileUrl}`;
+        document.getElementById('photo-preview-wrap').style.display = '';
+      } catch (err) {
+        statusSpan.textContent = '✗ Upload failed.';
+        statusSpan.style.color = 'var(--danger)';
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function handlePhotoUpload(e) {
+      e.preventDefault();
+      const file_url = document.getElementById('photo-file-url').value;
+      if (!file_url) { showToast('Please select and upload a photo first', 'error'); return; }
+      const payload = {
+        title: document.getElementById('photo-title').value,
+        description: document.getElementById('photo-desc').value,
+        file_url
+      };
+      try {
+        const result = await apiFetch('/photos', { method: 'POST', body: JSON.stringify(payload) });
+        showToast(result?.status === 'pending' ? 'Photo submitted for approval!' : 'Photo added to gallery!', 'success');
+        closeModal('upload-photo-modal');
+        loadGallery();
+        if (isTier1()) loadPendingPhotos();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    async function approvePhoto(id) {
+      try {
+        await apiFetch(`/photos/${id}/approve`, { method: 'POST' });
+        showToast('Photo approved and published!', 'success');
+        loadPendingPhotos(); loadGallery();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    async function rejectPhoto(id) {
+      const reason = prompt('Reason for rejection (optional):');
+      if (reason === null) return;
+      try {
+        await apiFetch(`/photos/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) });
+        showToast('Photo rejected.', 'success');
+        loadPendingPhotos(); loadGallery();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    async function deletePhoto(id) {
+      if (!confirm('Remove this photo?')) return;
+      try {
+        await apiFetch(`/photos/${id}`, { method: 'DELETE' });
+        showToast('Photo removed', 'success');
+        loadGallery();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    // ── Lightbox ──────────────────────────────────────────────
+    let _lbItems = [];   // [{src, title, desc}]
+    let _lbIdx = 0;
+
+    function openLightbox(src, title, desc) {
+      // Collect all visible photo images for prev/next navigation
+      _lbItems = Array.from(document.querySelectorAll('.photo-img-wrap img'))
+        .map(img => ({
+          src: img.src,
+          title: img.closest('.photo-card')?.querySelector('strong')?.textContent || '',
+          desc: img.closest('.photo-card')?.querySelector('p')?.textContent || ''
+        }));
+      _lbIdx = _lbItems.findIndex(i => i.src === src);
+      if (_lbIdx < 0) _lbIdx = 0;
+      _renderLightbox();
+      document.getElementById('lightbox-overlay').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function _renderLightbox() {
+      const item = _lbItems[_lbIdx];
+      const img = document.getElementById('lightbox-img');
+      img.style.opacity = '0';
+      img.src = item.src;
+      img.alt = item.title;
+      img.onload = () => { img.style.opacity = '1'; img.style.transition = 'opacity 0.2s'; };
+      document.getElementById('lb-title').textContent = item.title;
+      document.getElementById('lb-desc').textContent = item.desc;
+      document.getElementById('lb-counter').textContent =
+        _lbItems.length > 1 ? `${_lbIdx + 1} / ${_lbItems.length}` : '';
+      document.getElementById('lb-prev').disabled = _lbIdx === 0;
+      document.getElementById('lb-next').disabled = _lbIdx === _lbItems.length - 1;
+    }
+
+    function lightboxNav(dir) {
+      const next = _lbIdx + dir;
+      if (next < 0 || next >= _lbItems.length) return;
+      _lbIdx = next;
+      _renderLightbox();
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox-overlay').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    function handleLightboxOverlayClick(e) {
+      if (e.target === document.getElementById('lightbox-overlay')) closeLightbox();
+    }
+
+    document.addEventListener('keydown', e => {
+      const lb = document.getElementById('lightbox-overlay');
+      if (!lb.classList.contains('active')) return;
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') lightboxNav(-1);
+      if (e.key === 'ArrowRight') lightboxNav(1);
+    });
+  </script>
+</body>
+
+</html>

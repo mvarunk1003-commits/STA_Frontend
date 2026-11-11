@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Events - SSTPA Portal</title>
+    <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ea580c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SSTPA Portal">
+  <link rel="apple-touch-icon" href="images/logo.png">
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    .events-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .event-card { display: flex; flex-direction: column; height: 100%; }
+    .event-date { color: var(--primary-color); font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+    .event-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 10px; line-height: 1.3; }
+    .event-card p { color: var(--text-secondary); font-size: 14px; line-height: 1.5; margin-bottom: 16px; flex-grow: 1; }
+    .event-meta { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid var(--panel-border); font-size: 13px; color: var(--text-muted); }
+    .pending-section { margin-bottom: 32px; }
+    .pending-section h3 { font-size: 16px; font-weight: 700; color: #f59e0b; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div id="sidebar-placeholder" class="sidebar glass-panel"></div>
+    
+    <main class="main-content">
+      <header id="header-placeholder" class="main-header"></header>
+      
+      <!-- Page Header -->
+      <section style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;" class="fade-in">
+        <h2 style="font-size: 22px; font-weight:700;">Scheduled Events</h2>
+        <button id="create-event-btn" class="btn btn-primary" onclick="openModal('create-event-modal')" style="display:none;">+ Create Event</button>
+      </section>
+
+      <!-- Tier 1: Pending Approvals Section -->
+      <section id="pending-events-section" class="pending-section fade-in" style="display:none;">
+        <h3>⏳ Pending Approvals</h3>
+        <div id="pending-events-list" class="events-grid"></div>
+      </section>
+
+      <!-- Events list -->
+      <section id="events-list" class="events-grid fade-in">
+        <div style="grid-column:1/-1; text-align:center; padding: 40px 0; color:var(--text-secondary);">
+          Loading events...
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Create/Edit Event Modal -->
+  <div id="create-event-modal" class="modal-overlay">
+    <div class="glass-panel modal-content">
+      <div class="modal-header">
+        <h2 id="event-modal-title" style="font-weight: 700; font-size:20px;">New Event</h2>
+        <button onclick="closeModal('create-event-modal')" style="background:none; border:none; color:var(--text-secondary); font-size:24px; cursor:pointer;">&times;</button>
+      </div>
+      <form onsubmit="handleCreateEvent(event)">
+        <input type="hidden" id="event-edit-id">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="event-title">Event Title</label>
+            <input type="text" id="event-title" class="form-input" placeholder="e.g., Annual Gala dinner" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="event-date">Date</label>
+            <input type="date" id="event-date" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="event-location">Location</label>
+            <input type="text" id="event-location" class="form-input" placeholder="e.g., Community Hall">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="event-budget">Financial Budget (₹)</label>
+            <input type="number" id="event-budget" class="form-input" placeholder="e.g., 1500" min="0" step="any">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="event-desc">Description</label>
+            <textarea id="event-desc" class="form-textarea" rows="3" placeholder="Provide background description..."></textarea>
+          </div>
+          <div id="tier2-notice" style="display:none; padding:10px 14px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:8px; font-size:13px; color:#f59e0b; margin-top:8px;">
+            ⚠️ As a Tier 2 coordinator, your event will be submitted for approval by Admin/State Coordinator before going live.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('create-event-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="event-submit-btn">Create Event</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        document.getElementById('create-event-btn').style.display = '';
+        if (isTier2()) {
+          document.getElementById('tier2-notice').style.display = '';
+        }
+        if (isTier1()) {
+          loadPendingEvents();
+        }
+      }
+      loadEvents();
+    });
+
+    async function loadPendingEvents() {
+      try {
+        const pending = await apiFetch('/events/pending');
+        if (!pending || pending.length === 0) return;
+        document.getElementById('pending-events-section').style.display = '';
+        renderEventCards(pending, 'pending-events-list', true);
+      } catch (err) { /* ignore */ }
+    }
+
+    async function loadEvents() {
+      try {
+        const token = localStorage.getItem('token');
+        const endpoint = token ? '/events' : '/events/public/all';
+        const events = await apiFetch(endpoint);
+        const container = document.getElementById('events-list');
+
+        const approved = token ? events.filter(e => e.status === 'approved' || e.status == null) : events;
+        const myPending = token && isTier2() ? events.filter(e => e.status === 'pending' && e.created_by === getCurrentUser().id) : [];
+
+        if ((!approved || approved.length === 0) && myPending.length === 0) {
+          container.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-secondary);" class="glass-panel">
+              <p style="font-size:18px; font-weight:500;">No scheduled events found.</p>
+              <p style="font-size:14px; margin-top:8px;">${token ? 'Click "+ Create Event" to schedule your first session.' : 'Please check back later for updates.'}</p>
+            </div>
+          `;
+          return;
+        }
+
+        // Show Tier 2's own pending items first
+        const allForTier2 = [...myPending, ...approved.filter(e => !(myPending.find(p => p.id === e.id)))];
+        renderEventCards(allForTier2, 'events-list', false);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function renderEventCards(events, containerId, isPendingSection) {
+      const container = document.getElementById(containerId);
+      if (!events || events.length === 0) {
+        container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:20px; color:var(--text-muted);">No items.</div>`;
+        return;
+      }
+
+      const token = localStorage.getItem('token');
+      container.innerHTML = events.map(evt => {
+        const dateStr = new Date(evt.date).toLocaleDateString(undefined, {
+          weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+        });
+        const location = evt.location || 'Not Specified';
+        const budget = evt.budget ? `₹${Number(evt.budget).toLocaleString()}` : '₹0';
+        const description = evt.description || 'No description provided.';
+        const statusBadge = evt.status && evt.status !== 'approved' ? getStatusBadge(evt.status) : '';
+        const creatorInfo = evt.creator_name ? `<div style="font-size:11px; color:var(--text-muted); margin-top:4px;">By: ${evt.creator_name}</div>` : '';
+
+        let actionButtons = '';
+        if (token) {
+          if (isPendingSection && isTier1()) {
+            actionButtons = `
+              <div style="display:flex; gap:8px; margin-top:12px;">
+                <button onclick="approveEvent(${evt.id})" class="btn btn-primary" style="flex:1; font-size:12px; padding:6px;">✓ Approve</button>
+                <button onclick="rejectEvent(${evt.id})" class="btn btn-danger" style="flex:1; font-size:12px; padding:6px;">✗ Reject</button>
+              </div>`;
+          } else {
+            const canEdit = isTier1() || (evt.created_by === getCurrentUser().id);
+            actionButtons = canEdit ? `
+              <div style="display:flex; gap:8px; margin-top:12px;">
+                <a href="event-details.html?id=${evt.id}" class="btn btn-secondary" style="flex:1; font-size:12px; padding:6px;">View Details</a>
+                <button onclick="openEditEvent(${evt.id})" class="btn btn-secondary" style="font-size:12px; padding:6px 10px;">Edit</button>
+                <button onclick="deleteEvent(${evt.id})" class="btn btn-danger" style="font-size:12px; padding:6px 10px;">Del</button>
+              </div>` : `<a href="event-details.html?id=${evt.id}" class="btn btn-secondary" style="margin-top:12px; width:100%; font-size:12px;">View Details & Check-In</a>`;
+          }
+        }
+
+        return `
+          <div class="glass-panel glass-card event-card fade-in">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+              <div class="event-date">${dateStr}</div>
+              ${statusBadge}
+            </div>
+            <h3>${evt.title}</h3>
+            <p>${description}</p>
+            <div class="event-meta">
+              <span>📍 ${location}</span>
+              <span style="color:var(--success); font-weight:600;">₹${Number(evt.budget || 0).toLocaleString()}</span>
+            </div>
+            ${creatorInfo}
+            ${actionButtons}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function openEditEvent(id) {
+      try {
+        const evt = await apiFetch(`/events/${id}`);
+        if (!evt) return;
+        document.getElementById('event-edit-id').value = evt.id;
+        document.getElementById('event-title').value = evt.title;
+        document.getElementById('event-date').value = evt.date;
+        document.getElementById('event-location').value = evt.location || '';
+        document.getElementById('event-budget').value = evt.budget || 0;
+        document.getElementById('event-desc').value = evt.description || '';
+        document.getElementById('event-modal-title').textContent = 'Edit Event';
+        document.getElementById('event-submit-btn').textContent = 'Update Event';
+        openModal('create-event-modal');
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    async function handleCreateEvent(e) {
+      e.preventDefault();
+      const id = document.getElementById('event-edit-id').value;
+      const payload = {
+        title: document.getElementById('event-title').value,
+        date: document.getElementById('event-date').value,
+        location: document.getElementById('event-location').value,
+        budget: parseFloat(document.getElementById('event-budget').value) || 0,
+        description: document.getElementById('event-desc').value
+      };
+
+      try {
+        if (id) {
+          await apiFetch(`/events/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+          showToast('Event updated successfully!', 'success');
+        } else {
+          const result = await apiFetch('/events', { method: 'POST', body: JSON.stringify(payload) });
+          const msg = result?.status === 'pending'
+            ? 'Event submitted for approval by Admin/State Coordinator!'
+            : 'Event created and published!';
+          showToast(msg, 'success');
+        }
+        closeModal('create-event-modal');
+        e.target.reset();
+        document.getElementById('event-edit-id').value = '';
+        document.getElementById('event-modal-title').textContent = 'New Event';
+        document.getElementById('event-submit-btn').textContent = 'Create Event';
+        loadEvents();
+        if (isTier1()) loadPendingEvents();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function approveEvent(id) {
+      try {
+        await apiFetch(`/events/${id}/approve`, { method: 'POST' });
+        showToast('Event approved and published!', 'success');
+        loadPendingEvents(); loadEvents();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    async function rejectEvent(id) {
+      const reason = prompt('Reason for rejection (optional):');
+      if (reason === null) return;
+      try {
+        await apiFetch(`/events/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) });
+        showToast('Event rejected.', 'success');
+        loadPendingEvents(); loadEvents();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+
+    async function deleteEvent(id) {
+      if (!confirm('Are you sure you want to delete this event?')) return;
+      try {
+        await apiFetch(`/events/${id}`, { method: 'DELETE' });
+        showToast('Event deleted successfully', 'success');
+        loadEvents();
+      } catch (err) { showToast(err.message, 'error'); }
+    }
+  </script>
+</body>
+</html>

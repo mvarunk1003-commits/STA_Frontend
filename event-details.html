@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Details - OrgManager</title>
+    <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ea580c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SSTPA Portal">
+  <link rel="apple-touch-icon" href="images/logo.png">
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 900px) {
+      .details-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .status-select-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      border: 1px solid var(--panel-border);
+      cursor: pointer;
+      background: rgba(255,255,255,0.02);
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+    .status-select-btn:hover {
+      background: rgba(255,255,255,0.08);
+      color: white;
+    }
+    .status-select-btn.active[data-status="present"] {
+      background: var(--success);
+      color: white;
+      border-color: var(--success);
+    }
+    .status-select-btn.active[data-status="absent"] {
+      background: var(--danger);
+      color: white;
+      border-color: var(--danger);
+    }
+    .status-select-btn.active[data-status="excused"] {
+      background: var(--warning);
+      color: black;
+      border-color: var(--warning);
+    }
+    .attendance-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+    .attendance-row:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div id="sidebar-placeholder" class="sidebar glass-panel"></div>
+    
+    <main class="main-content">
+      <header id="header-placeholder" class="main-header"></header>
+      
+      <!-- Back button -->
+      <div>
+        <a href="events.html" class="btn btn-secondary" style="font-size: 13px; padding: 6px 12px;">← Back to Events</a>
+      </div>
+
+      <!-- Main Event Info Box -->
+      <section id="event-summary-card" class="glass-panel glass-card fade-in">
+        <h2 id="summary-title" style="font-size:26px; font-weight:700;">Loading Event...</h2>
+        <p id="summary-desc" style="color:var(--text-secondary); margin-top: 8px; font-size:15px;"></p>
+        <div style="display:flex; flex-wrap:wrap; gap: 30px; margin-top: 20px; font-size: 14px; border-top: 1px solid var(--panel-border); padding-top: 15px; color: var(--text-muted);">
+          <div>📅 Date: <strong id="summary-date" style="color:white;">-</strong></div>
+          <div>📍 Location: <strong id="summary-loc" style="color:white;">-</strong></div>
+          <div>💰 Budget: <strong id="summary-budget" style="color:white;">-</strong></div>
+        </div>
+      </section>
+
+      <!-- Details Double Column Grid -->
+      <div class="details-grid fade-in">
+        <!-- Attendance Checklist Panel -->
+        <section class="glass-panel glass-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+            <h2>Session Attendance</h2>
+            <button class="btn btn-primary" onclick="saveAttendance()" style="padding: 6px 12px; font-size: 13px;">Save Attendance</button>
+          </div>
+          <div id="attendance-list-container" style="max-height: 400px; overflow-y:auto; border:1px solid var(--panel-border); border-radius:10px;">
+            <div style="text-align:center; padding:30px; color:var(--text-muted);">Loading member records...</div>
+          </div>
+        </section>
+
+        <!-- Expenses List Panel -->
+        <section class="glass-panel glass-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px;">
+            <h2>Budget Expenses</h2>
+            <button class="btn btn-primary" onclick="openModal('add-expense-modal')" style="padding: 6px 12px; font-size: 13px;">+ Add Expense</button>
+          </div>
+          <div class="table-container" style="max-height: 400px; overflow-y:auto;">
+            <table class="glass-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Amount</th>
+                  <th>Receipt</th>
+                </tr>
+              </thead>
+              <tbody id="expenses-table-body">
+                <tr>
+                  <td colspan="4" style="text-align:center; color:var(--text-muted);">No expenses recorded yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Expense Modal -->
+  <div id="add-expense-modal" class="modal-overlay">
+    <div class="glass-panel modal-content">
+      <div class="modal-header">
+        <h2 style="font-weight: 700; font-size:20px;">Record Expense</h2>
+        <button onclick="closeModal('add-expense-modal')" style="background:none; border:none; color:var(--text-secondary); font-size:24px; cursor:pointer;">&times;</button>
+      </div>
+      <form onsubmit="handleAddExpense(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="exp-title">Expense Title</label>
+            <input type="text" id="exp-title" class="form-input" placeholder="e.g., Sound System Hire" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="exp-amount">Amount ($)</label>
+            <input type="number" id="exp-amount" class="form-input" placeholder="e.g., 250" min="0" step="any" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="exp-category">Category</label>
+            <select id="exp-category" class="form-select">
+              <option value="catering">Catering & Food</option>
+              <option value="venue">Venue Booking</option>
+              <option value="sound">Sound & AV equipment</option>
+              <option value="decor">Decorations</option>
+              <option value="travel">Travel & Logistics</option>
+              <option value="misc">Miscellaneous</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="exp-date">Date</label>
+            <input type="date" id="exp-date" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="exp-receipt">Upload Receipt (Optional)</label>
+            <input type="file" id="exp-receipt" class="form-input" onchange="uploadReceipt(event)">
+            <input type="hidden" id="exp-receipt-url">
+            <span id="upload-status" style="font-size:12px; color:var(--text-muted); display:block; margin-top:4px;"></span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('add-expense-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="js/app.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const eventId = urlParams.get('id');
+
+    if (!eventId) {
+      window.location.href = 'events.html';
+    }
+
+    // Temporary storage for attendance status in UI
+    let localAttendanceState = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadEventDetails();
+      loadAttendance();
+      loadExpenses();
+    });
+
+    async function loadEventDetails() {
+      try {
+        const evt = await apiFetch(`/events/${eventId}`);
+        if (!evt) return;
+
+        document.getElementById('summary-title').textContent = evt.title;
+        document.getElementById('summary-desc').textContent = evt.description || 'No description provided.';
+        document.getElementById('summary-date').textContent = new Date(evt.date).toLocaleDateString();
+        document.getElementById('summary-loc').textContent = evt.location || 'Not Specified';
+        document.getElementById('summary-budget').textContent = evt.budget ? `$${evt.budget.toLocaleString()}` : '$0';
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function loadAttendance() {
+      try {
+        const attendance = await apiFetch(`/events/${eventId}/attendance`);
+        const container = document.getElementById('attendance-list-container');
+
+        if (!attendance || attendance.length === 0) {
+          container.innerHTML = '<div style="padding: 20px; text-align:center; color: var(--text-secondary);">No active members registered in directory.</div>';
+          return;
+        }
+
+        localAttendanceState = attendance.map(item => ({
+          member_id: item.member_id,
+          status: item.status || 'present' // default
+        }));
+
+        container.innerHTML = attendance.map((item, idx) => {
+          const status = item.status || 'present';
+          return `
+            <div class="attendance-row">
+              <span style="font-weight: 500;">${item.first_name} ${item.last_name}</span>
+              <div style="display:flex; gap: 6px;">
+                <button type="button" class="status-select-btn ${status === 'present' ? 'active' : ''}" data-index="${idx}" data-status="present" onclick="setLocalStatus(${idx}, 'present')">Present</button>
+                <button type="button" class="status-select-btn ${status === 'absent' ? 'active' : ''}" data-index="${idx}" data-status="absent" onclick="setLocalStatus(${idx}, 'absent')">Absent</button>
+                <button type="button" class="status-select-btn ${status === 'excused' ? 'active' : ''}" data-index="${idx}" data-status="excused" onclick="setLocalStatus(${idx}, 'excused')">Excused</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function setLocalStatus(idx, status) {
+      localAttendanceState[idx].status = status;
+      
+      // Update active UI classes for this button set
+      const row = document.querySelectorAll('.attendance-row')[idx];
+      const buttons = row.querySelectorAll('.status-select-btn');
+      buttons.forEach(btn => {
+        if (btn.getAttribute('data-status') === status) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+
+    async function saveAttendance() {
+      try {
+        await apiFetch(`/events/${eventId}/attendance`, {
+          method: 'POST',
+          body: JSON.stringify({ attendanceList: localAttendanceState })
+        });
+        showToast('Attendance checklist saved!', 'success');
+        loadAttendance();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function loadExpenses() {
+      try {
+        const expenses = await apiFetch(`/events/${eventId}/expenses`);
+        const tbody = document.getElementById('expenses-table-body');
+        
+        if (!expenses || expenses.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="4" style="text-align:center; color:var(--text-muted);">No expenses recorded yet.</td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = expenses.map(exp => {
+          const receipt = exp.receipt_url 
+            ? `<a href="${window.location.origin}${exp.receipt_url}" target="_blank" style="color:var(--primary-color); text-decoration:none;">📄 View Receipt</a>` 
+            : '<span style="color:var(--text-muted);">None</span>';
+          return `
+            <tr>
+              <td style="font-weight: 500;">${exp.title}</td>
+              <td style="text-transform: capitalize;">${exp.category}</td>
+              <td>$${exp.amount.toLocaleString()}</td>
+              <td>${receipt}</td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function uploadReceipt(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const statusSpan = document.getElementById('upload-status');
+      statusSpan.textContent = 'Uploading...';
+      
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${window.location.origin}/api/upload`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Upload failed');
+
+        document.getElementById('exp-receipt-url').value = data.fileUrl;
+        statusSpan.textContent = 'Uploaded successfully!';
+        statusSpan.style.color = 'var(--success)';
+      } catch (err) {
+        statusSpan.textContent = 'Upload failed.';
+        statusSpan.style.color = 'var(--danger)';
+        showToast(err.message, 'error');
+      }
+    }
+
+    async function handleAddExpense(e) {
+      e.preventDefault();
+      const title = document.getElementById('exp-title').value;
+      const amount = parseFloat(document.getElementById('exp-amount').value);
+      const category = document.getElementById('exp-category').value;
+      const date = document.getElementById('exp-date').value;
+      const receipt_url = document.getElementById('exp-receipt-url').value;
+
+      try {
+        await apiFetch('/reports/expenses-list', {
+          method: 'POST',
+          body: JSON.stringify({
+            event_id: parseInt(eventId),
+            title,
+            amount,
+            category,
+            date,
+            receipt_url
+          })
+        });
+
+        showToast('Expense recorded successfully!', 'success');
+        closeModal('add-expense-modal');
+        e.target.reset();
+        document.getElementById('upload-status').textContent = '';
+        loadExpenses();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Us - Sri Shankara Tattva Prasara Abhiyana</title>
+    <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ea580c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SSTPA Portal">
+  <link rel="apple-touch-icon" href="images/logo.png">
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    .contact-layout {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 24px;
+      margin-top: 30px;
+    }
+
+    @media (max-width: 900px) {
+      .contact-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-container">
+    <div id="sidebar-placeholder"></div>
+
+    <main class="main-content fade-in">
+      <header id="header-placeholder" class="main-header"></header>
+
+      <section class="glass-panel glass-card">
+        <h1 style="font-size: 32px; font-weight:800; margin-bottom:10px; color:var(--text-primary);">Contact Secretariat
+        </h1>
+        <p style="color:var(--text-secondary); font-size:16px;">Have queries regarding priest schedules, Vedic learning
+          enrollment, or local chapter details? Reach out to us.</p>
+      </section>
+
+      <div class="contact-layout">
+        <!-- Selection Dropdown and Coordinator Details Panel -->
+        <div>
+          <div class="glass-panel glass-card">
+            <h2 style="font-size: 20px; font-weight:700; margin-bottom:20px; color:var(--text-primary);">Find Regional
+              Coordinator</h2>
+
+            <div class="form-group">
+              <label class="form-label" for="select-state">State</label>
+              <select id="select-state" class="form-select" onchange="onStateChange()">
+                <option value="">— Select State —</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="select-district">District</label>
+              <select id="select-district" class="form-select" onchange="onDistrictChange()" disabled>
+                <option value="">— Select District —</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="select-taluk">Taluk / Sub-District</label>
+              <select id="select-taluk" class="form-select" onchange="onTalukChange()" disabled>
+                <option value="">— Select Taluk —</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="select-member">Member Unit / Sabha</label>
+              <select id="select-member" class="form-select" onchange="onMemberChange()" disabled>
+                <option value="">— Select Unit —</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Coordinator Profile details -->
+          <div id="coordinator-details-card" class="glass-panel glass-card"
+            style="display:none; border:1px solid rgba(234, 88, 12, 0.2); background:rgba(255,255,255,0.9); margin-top:20px;">
+            <h3 style="font-size: 16px; font-weight:700; margin-bottom:12px; color:var(--primary-color);">Local
+              Coordinator Profile</h3>
+            <p style="font-size:14px; margin-bottom:8px; color:var(--text-primary);"><strong>Name:</strong> <span
+                id="coord-name"></span></p>
+            <p style="font-size:14px; margin-bottom:8px; color:var(--text-primary);"><strong>Designation:</strong> <span
+                id="coord-role"></span></p>
+            <p style="font-size:14px; margin-bottom:8px; color:var(--text-primary);"><strong>Phone:</strong> <span
+                id="coord-phone"></span></p>
+            <p style="font-size:14px; margin-bottom:8px; color:var(--text-primary);"><strong>Email:</strong> <span
+                id="coord-email"></span></p>
+            <p style="font-size:14px; color:var(--text-primary); line-height:1.4;"><strong>Office Address:</strong>
+              <span id="coord-address"></span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Right Side General Contact Details and Form -->
+        <div>
+          <div class="glass-panel glass-card">
+            <h2 style="font-size: 20px; font-weight:700; margin-bottom:16px; color:var(--text-primary);">Abhiyana
+              Central Details</h2>
+            <p style="color:var(--text-secondary); font-size:14px; line-height:1.7; margin-bottom:20px;">
+              <strong>Address:</strong> Sringeri, Chikkamagaluru District, Karnataka - 577139<br>
+              <strong>Phone:</strong>+91 98765 43200<br>
+              <strong>Email:</strong> contact@shankaratattva.org
+            </p>
+            <h4 style="font-size: 16px; font-weight:700; margin-bottom:10px; color:var(--text-primary);">Central
+              Secretariat Hours</h4>
+            <p style="color:var(--text-secondary); font-size:14px; line-height:1.6;">
+              Monday – Saturday, 9:00 AM – 5:00 PM<br>
+
+            </p>
+          </div>
+
+          <div class="glass-panel glass-card" style="margin-top:20px;">
+            <h2 style="font-size: 20px; font-weight:700; margin-bottom:20px; color:var(--text-primary);">Send a Message
+            </h2>
+            <form onsubmit="handleContactSubmit(event)">
+              <div class="form-group">
+                <label class="form-label" for="c-name">Full Name</label>
+                <input type="text" id="c-name" class="form-input" required placeholder="Your name">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="c-email">Email Address</label>
+                <input type="email" id="c-email" class="form-input" required placeholder="you@example.com">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="c-msg">Message</label>
+                <textarea id="c-msg" class="form-textarea" rows="4" required
+                  placeholder="Type your inquiry..."></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary" style="width:100%;">Submit Message</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="js/app.js"></script>
+  <script src="js/location-dropdowns.js"></script>
+  <script>
+    // locationData = district/taluk from JSON; coordinatorMap = registered units from API
+    let locationData = {};
+    let coordinatorMap = {}; // key: "state|district|taluk" => [{unit_name, ...}]
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Load location hierarchy from static JSON
+      locationData = await loadLocationData();
+      populateStateDropdown();
+
+      // Load registered coordinators from API
+      try {
+        const res = await fetch(`${window.location.origin}/api/coordinators/public/all`);
+        const list = await res.json();
+        list.forEach(c => {
+          const key = `${c.state}|${c.district}|${c.taluk}`;
+          if (!coordinatorMap[key]) coordinatorMap[key] = [];
+          coordinatorMap[key].push(c);
+        });
+      } catch (e) {
+        console.warn('Could not load coordinator list from API:', e.message);
+      }
+    });
+
+    function populateStateDropdown() {
+      const sel = document.getElementById('select-state');
+      sel.innerHTML = '<option value="">— Select State —</option>';
+      Object.keys(locationData).sort().forEach(state => {
+        sel.innerHTML += `<option value="${state}">${state}</option>`;
+      });
+    }
+
+    function onStateChange() {
+      const state = document.getElementById('select-state').value;
+      const distSel = document.getElementById('select-district');
+      const talukSel = document.getElementById('select-taluk');
+      const memberSel = document.getElementById('select-member');
+
+      distSel.innerHTML = '<option value="">— Select District —</option>';
+      talukSel.innerHTML = '<option value="">— Select Taluk —</option>';
+      memberSel.innerHTML = '<option value="">— Select Unit —</option>';
+      distSel.disabled = talukSel.disabled = memberSel.disabled = true;
+      document.getElementById('coordinator-details-card').style.display = 'none';
+
+      if (state && locationData[state]) {
+        Object.keys(locationData[state]).sort().forEach(d => {
+          distSel.innerHTML += `<option value="${d}">${d}</option>`;
+        });
+        distSel.disabled = false;
+      }
+    }
+
+    function onDistrictChange() {
+      const state = document.getElementById('select-state').value;
+      const district = document.getElementById('select-district').value;
+      const talukSel = document.getElementById('select-taluk');
+      const memberSel = document.getElementById('select-member');
+
+      talukSel.innerHTML = '<option value="">— Select Taluk —</option>';
+      memberSel.innerHTML = '<option value="">— Select Unit —</option>';
+      talukSel.disabled = memberSel.disabled = true;
+      document.getElementById('coordinator-details-card').style.display = 'none';
+
+      if (state && district && locationData[state] && locationData[state][district]) {
+        locationData[state][district].forEach(t => {
+          talukSel.innerHTML += `<option value="${t}">${t}</option>`;
+        });
+        talukSel.disabled = false;
+      }
+    }
+
+    function onTalukChange() {
+      const state = document.getElementById('select-state').value;
+      const district = document.getElementById('select-district').value;
+      const taluk = document.getElementById('select-taluk').value;
+      const memberSel = document.getElementById('select-member');
+
+      memberSel.innerHTML = '<option value="">— Select Unit —</option>';
+      memberSel.disabled = true;
+      document.getElementById('coordinator-details-card').style.display = 'none';
+
+      if (!state || !district || !taluk) return;
+
+      const key = `${state}|${district}|${taluk}`;
+      const units = coordinatorMap[key] || [];
+
+      if (units.length === 0) {
+        // No coordinator registered for this taluk yet
+        memberSel.innerHTML = '<option value="">(No coordinator registered yet)</option>';
+        document.getElementById('coordinator-details-card').style.display = 'none';
+      } else {
+        units.forEach(c => {
+          memberSel.innerHTML += `<option value="${c.id}">${c.unit_name}</option>`;
+        });
+        memberSel.disabled = false;
+      }
+    }
+
+    function onMemberChange() {
+      const memberSel = document.getElementById('select-member');
+      const id = parseInt(memberSel.value);
+      const detailsCard = document.getElementById('coordinator-details-card');
+
+      // Find the coordinator across all keys
+      let found = null;
+      for (const units of Object.values(coordinatorMap)) {
+        found = units.find(c => c.id === id);
+        if (found) break;
+      }
+
+      if (!found) { detailsCard.style.display = 'none'; return; }
+
+      document.getElementById('coord-name').textContent = found.coordinator_name || '—';
+      document.getElementById('coord-role').textContent = found.role || '—';
+      document.getElementById('coord-phone').textContent = found.phone || '—';
+      document.getElementById('coord-email').textContent = found.email || '—';
+      document.getElementById('coord-address').textContent = found.address || '—';
+      detailsCard.style.display = 'block';
+    }
+
+    async function handleContactSubmit(e) {
+      e.preventDefault();
+      showToast('Thank you! Your message has been routed to the Abhiyana Secretariat.', 'success');
+      e.target.reset();
+    }
+  </script>
+</body>

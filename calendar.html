@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendar - OrgManager</title>
+    <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ea580c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SSTPA Portal">
+  <link rel="apple-touch-icon" href="images/logo.png">
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    .calendar-wrapper {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 900px) {
+      .calendar-wrapper {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .calendar-header-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 1px;
+      background: var(--panel-border);
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--panel-border);
+    }
+    .calendar-day-header {
+      background: rgba(255, 255, 255, 0.02);
+      padding: 12px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    .calendar-cell {
+      background: var(--bg-color);
+      min-height: 90px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: background 0.3s;
+    }
+    .calendar-cell:hover {
+      background: rgba(255, 255, 255, 0.015);
+    }
+    .calendar-cell.different-month {
+      opacity: 0.3;
+    }
+    .calendar-cell.today {
+      background: rgba(99, 102, 241, 0.05);
+    }
+    .calendar-cell.today .day-number {
+      background: var(--primary-color);
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+    .day-number {
+      font-weight: 500;
+      font-size: 14px;
+    }
+    .cell-events {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    .calendar-event-tag {
+      background: var(--primary-color);
+      color: white;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div id="sidebar-placeholder" class="sidebar glass-panel"></div>
+    
+    <main class="main-content">
+      <header id="header-placeholder" class="main-header"></header>
+
+      <div class="calendar-wrapper fade-in">
+        <!-- Calendar Grid Panel -->
+        <section class="glass-panel glass-card">
+          <div class="calendar-header-nav">
+            <h2 id="current-month-year" style="font-size:22px; font-weight:700;">Month Year</h2>
+            <div style="display:flex; gap:10px;">
+              <button class="btn btn-secondary" onclick="prevMonth()" style="padding:6px 12px; font-size:16px;">&larr;</button>
+              <button class="btn btn-secondary" onclick="nextMonth()" style="padding:6px 12px; font-size:16px;">&rarr;</button>
+            </div>
+          </div>
+          
+          <div class="calendar-grid" id="calendar-grid-container">
+            <!-- Headers and cells will be injected here -->
+          </div>
+        </section>
+
+        <!-- Events List panel -->
+        <section class="glass-panel glass-card">
+          <h2 style="margin-bottom: 20px;">Upcoming Events</h2>
+          <div id="calendar-events-sidebar" style="display:flex; flex-direction:column; gap:16px; max-height: 550px; overflow-y:auto;">
+            <div style="color:var(--text-muted); font-size:14px; text-align:center; padding:20px;">Loading schedule...</div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="js/app.js"></script>
+  <script>
+    let currentDate = new Date();
+    let eventsList = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadEvents();
+      renderCalendar();
+    });
+
+    async function loadEvents() {
+      try {
+        eventsList = await apiFetch('/events');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function renderCalendar() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+
+      // Set month title
+      const monthName = currentDate.toLocaleString('default', { month: 'long' });
+      document.getElementById('current-month-year').textContent = `${monthName} ${year}`;
+
+      const grid = document.getElementById('calendar-grid-container');
+      grid.innerHTML = '';
+
+      // Render Day Headers
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      days.forEach(day => {
+        const header = document.createElement('div');
+        header.className = 'calendar-day-header';
+        header.textContent = day;
+        grid.appendChild(header);
+      });
+
+      // Get first day of the month and total days
+      const firstDayIndex = new Date(year, month, 1).getDay();
+      const totalDays = new Date(year, month + 1, 0).getDate();
+      const prevTotalDays = new Date(year, month, 0).getDate();
+
+      const today = new Date();
+
+      // Render Prev Month trailing cells
+      for (let i = firstDayIndex - 1; i >= 0; i--) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-cell different-month';
+        cell.innerHTML = `<span class="day-number">${prevTotalDays - i}</span>`;
+        grid.appendChild(cell);
+      }
+
+      // Render Current Month cells
+      for (let day = 1; day <= totalDays; day++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-cell';
+        
+        const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
+        if (isToday) cell.classList.add('today');
+
+        // Check if there are events for this date
+        const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayEvents = eventsList.filter(e => e.date === dateString);
+
+        let eventTagsHtml = '';
+        if (dayEvents.length > 0) {
+          eventTagsHtml = `
+            <div class="cell-events">
+              ${dayEvents.map(e => `<div class="calendar-event-tag" onclick="window.location.href='event-details.html?id=${e.id}'">${e.title}</div>`).join('')}
+            </div>
+          `;
+        }
+
+        cell.innerHTML = `
+          <span class="day-number">${day}</span>
+          ${eventTagsHtml}
+        `;
+        grid.appendChild(cell);
+      }
+
+      // Render Next Month leading cells to fill the grid (standard 42 slots)
+      const totalCellsFilled = firstDayIndex + totalDays;
+      const cellsToFill = 42 - totalCellsFilled;
+      for (let day = 1; day <= cellsToFill; day++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-cell different-month';
+        cell.innerHTML = `<span class="day-number">${day}</span>`;
+        grid.appendChild(cell);
+      }
+
+      // Update sidebar list
+      renderSidebarEvents();
+    }
+
+    function renderSidebarEvents() {
+      const sidebar = document.getElementById('calendar-events-sidebar');
+      const upcoming = eventsList.filter(e => new Date(e.date) >= new Date().setHours(0,0,0,0))
+                                  .sort((a,b) => new Date(a.date) - new Date(b.date));
+
+      if (upcoming.length === 0) {
+        sidebar.innerHTML = '<div style="color:var(--text-muted); font-size:14px; text-align:center; padding: 20px 0;">No upcoming events in calendar.</div>';
+        return;
+      }
+
+      sidebar.innerHTML = upcoming.map(e => {
+        const dateStr = new Date(e.date).toLocaleDateString(undefined, {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric'
+        });
+        return `
+          <div class="glass-panel" style="padding:16px; border-radius:10px; background:rgba(255,255,255,0.01);">
+            <div style="color:var(--primary-color); font-weight:600; font-size:13px; margin-bottom:4px;">${dateStr}</div>
+            <h4 style="font-weight:700; font-size:15px; margin-bottom:4px;">${e.title}</h4>
+            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">📍 ${e.location || 'Not specified'}</div>
+            <a href="event-details.html?id=${e.id}" style="font-size:12px; color:var(--secondary-color); text-decoration:none; font-weight:600;">Details & Check-in &rarr;</a>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function prevMonth() {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      renderCalendar();
+    }
+
+    function nextMonth() {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      renderCalendar();
+    }
+  </script>
+</body>
+</html>

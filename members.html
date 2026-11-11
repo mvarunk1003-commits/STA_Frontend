@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Regional Coordinators - SSTPA Portal</title>
+  <meta name="description" content="Manage State, District and Taluk Coordinators for SSTPA units across South India.">
+    <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ea580c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SSTPA Portal">
+  <link rel="apple-touch-icon" href="images/logo.png">
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    /* ── Filter Bar ── */
+    .filter-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+      padding: 18px 20px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      margin-bottom: 20px;
+    }
+    .filter-bar select, .filter-bar input {
+      font-size: 13px;
+      padding: 8px 12px;
+    }
+    .filter-bar .filter-actions {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      grid-column: span 1;
+    }
+
+    /* ── Stats bar ── */
+    .coord-stats {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .coord-stat-chip {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .coord-stat-chip strong { color: var(--primary-color); font-size: 15px; }
+
+    /* ── Table enhancements ── */
+    .state-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .state-ka { background: rgba(234,88,12,0.1); color: #ea580c; border: 1px solid rgba(234,88,12,0.2); }
+    .state-tn { background: rgba(5,150,105,0.1); color: #059669; border: 1px solid rgba(5,150,105,0.2); }
+    .state-kl { background: rgba(99,102,241,0.1); color: #818cf8; border: 1px solid rgba(99,102,241,0.2); }
+    .state-ap { background: rgba(245,158,11,0.1); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+    .state-tg { background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+
+    /* ── Modal select ── */
+    .location-selects { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .loc-select-hint { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div id="sidebar-placeholder" class="sidebar glass-panel"></div>
+
+    <main class="main-content">
+      <header id="header-placeholder" class="main-header"></header>
+
+      <!-- Page Header -->
+      <section style="display:flex; justify-content:space-between; align-items:flex-start; gap:20px; flex-wrap:wrap;" class="fade-in">
+        <div>
+          <h1 style="font-size:24px; font-weight:800;">Regional Coordinators Directory</h1>
+          <p style="font-size:14px; color:var(--text-secondary); margin-top:4px;">
+            State, District &amp; Taluk unit contacts across South India
+          </p>
+        </div>
+        <button class="btn btn-primary" id="add-coord-btn" onclick="openCreateModal()" style="display:none;">
+          + Add Coordinator
+        </button>
+      </section>
+
+      <!-- Stats chips -->
+      <div class="coord-stats fade-in">
+        <div class="coord-stat-chip">Total: <strong id="stat-total">—</strong></div>
+        <div class="coord-stat-chip">🟠 Karnataka: <strong id="stat-ka">—</strong></div>
+        <div class="coord-stat-chip">🟢 Tamil Nadu: <strong id="stat-tn">—</strong></div>
+        <div class="coord-stat-chip">🟣 Kerala: <strong id="stat-kl">—</strong></div>
+        <div class="coord-stat-chip">🟡 Andhra Pradesh: <strong id="stat-ap">—</strong></div>
+        <div class="coord-stat-chip">🔴 Telangana: <strong id="stat-tg">—</strong></div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar fade-in">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="font-size:11px;">State</label>
+          <select id="filter-state" class="form-select" onchange="onFilterStateChange()">
+            <option value="">All States</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="font-size:11px;">District</label>
+          <select id="filter-district" class="form-select" onchange="onFilterDistrictChange()">
+            <option value="">All Districts</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="font-size:11px;">Taluk</label>
+          <select id="filter-taluk" class="form-select" onchange="applyFilters()">
+            <option value="">All Taluks</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label" style="font-size:11px;">Search</label>
+          <input type="text" id="coord-search" class="form-input"
+            placeholder="Name, unit, role..."
+            oninput="applyFilters()" style="min-width:0;">
+        </div>
+        <div class="filter-actions">
+          <button class="btn btn-secondary" onclick="clearFilters()" style="font-size:12px; padding:8px 12px; white-space:nowrap;">
+            ✕ Clear
+          </button>
+        </div>
+      </div>
+
+      <!-- Coordinators Table -->
+      <section class="glass-panel glass-card fade-in" style="overflow:hidden; padding:0;">
+        <div style="padding:16px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--panel-border);">
+          <span id="results-count" style="font-size:13px; color:var(--text-secondary);"></span>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-secondary" onclick="exportCSV()" style="font-size:12px; padding:6px 12px;">⬇ Export CSV</button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="glass-table">
+            <thead>
+              <tr>
+                <th>State</th>
+                <th>District / Taluk</th>
+                <th>Member Unit / Sabha</th>
+                <th>Coordinator</th>
+                <th>Designation</th>
+                <th>Contact</th>
+                <th id="actions-th" style="text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="coordinators-table-body">
+              <tr>
+                <td colspan="7" style="text-align:center; color:var(--text-muted); padding:40px;">
+                  Loading coordinators directory...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       Coordinator Add / Edit Modal
+  ════════════════════════════════════════════ -->
+  <div id="coordinator-modal" class="modal-overlay">
+    <div class="glass-panel modal-content" style="max-width:620px;">
+      <div class="modal-header">
+        <h2 id="modal-title" style="font-weight:700; font-size:20px;">Add Coordinator</h2>
+        <button onclick="closeModal('coordinator-modal')"
+          style="background:none; border:none; color:var(--text-secondary); font-size:24px; cursor:pointer;">&times;</button>
+      </div>
+
+      <form id="coordinator-form" onsubmit="handleFormSubmit(event)">
+        <input type="hidden" id="coord-id">
+        <div class="modal-body">
+
+          <!-- ── Location Row 1: State + District ── -->
+          <div class="location-selects" style="margin-bottom:16px;">
+            <div class="form-group">
+              <label class="form-label" for="form-state">State <span style="color:var(--danger)">*</span></label>
+              <select id="form-state" class="form-select" required onchange="onModalStateChange()">
+                <option value="">— Select State —</option>
+              </select>
+              <span class="loc-select-hint">Karnataka, TN, Kerala, AP, TG</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="form-district">District <span style="color:var(--danger)">*</span></label>
+              <select id="form-district" class="form-select" required onchange="onModalDistrictChange()">
+                <option value="">— Select District —</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ── Location Row 2: Taluk + Unit ── -->
+          <div class="location-selects" style="margin-bottom:16px;">
+            <div class="form-group">
+              <label class="form-label" for="form-taluk">Taluk / Sub-District <span style="color:var(--danger)">*</span></label>
+              <select id="form-taluk" class="form-select" required>
+                <option value="">— Select Taluk —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="form-unit">Member Unit / Sabha Name <span style="color:var(--danger)">*</span></label>
+              <input type="text" id="form-unit" class="form-input"
+                placeholder="e.g., Sri Shankara Seva Samithi" required>
+            </div>
+          </div>
+
+          <!-- ── Coordinator Info ── -->
+          <div class="location-selects" style="margin-bottom:16px;">
+            <div class="form-group">
+              <label class="form-label" for="form-name">Coordinator Name <span style="color:var(--danger)">*</span></label>
+              <input type="text" id="form-name" class="form-input"
+                placeholder="e.g., Sri R. K. Shastri" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="form-role">Role / Designation <span style="color:var(--danger)">*</span></label>
+              <select id="form-role" class="form-select" required>
+                <option value="">— Select Role —</option>
+                <option value="State Coordinator">State Coordinator</option>
+                <option value="District Coordinator">District Coordinator</option>
+                <option value="Taluk Coordinator">Taluk Coordinator</option>
+                <option value="Unit In-Charge">Unit In-Charge</option>
+                <option value="Youth Coordinator">Youth Coordinator</option>
+                <option value="Women's Wing Coordinator">Women's Wing Coordinator</option>
+                <option value="Bhajan Team Head">Bhajan Team Head</option>
+                <option value="Media Coordinator">Media Coordinator</option>
+                <option value="Finance Coordinator">Finance Coordinator</option>
+                <option value="Event Coordinator">Event Coordinator</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ── Contact Info ── -->
+          <div class="location-selects" style="margin-bottom:16px;">
+            <div class="form-group">
+              <label class="form-label" for="form-phone">Phone Number</label>
+              <input type="tel" id="form-phone" class="form-input"
+                placeholder="+91 98450 12345">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="form-email">Email Address</label>
+              <input type="email" id="form-email" class="form-input"
+                placeholder="coordinator@example.com">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="form-address">Office Address</label>
+            <textarea id="form-address" class="form-textarea" rows="2"
+              placeholder="e.g., Shankara Math Compound, Bengaluru 560 001"></textarea>
+          </div>
+
+        </div><!-- end modal-body -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('coordinator-modal')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="modal-submit-btn">Save Coordinator</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <script src="js/app.js"></script>
+  <script src="js/location-dropdowns.js"></script>
+  <script>
+    /* ────────────────────────────────────────────
+       State
+    ──────────────────────────────────────────── */
+    let allCoordinators = [];
+    let locationData = {};
+    let canModify = false;
+
+    /* ────────────────────────────────────────────
+       Init
+    ──────────────────────────────────────────── */
+    document.addEventListener('DOMContentLoaded', async () => {
+      canModify = isTier1();
+      if (!canModify) {
+        document.getElementById('add-coord-btn').style.display = 'none';
+        document.getElementById('actions-th').style.display = 'none';
+      } else {
+        document.getElementById('add-coord-btn').style.display = '';
+      }
+
+      // Load location data for filters
+      locationData = await loadLocationData();
+      buildFilterStateDropdown();
+      await loadCoordinators();
+    });
+
+    /* ────────────────────────────────────────────
+       Filter dropdown builders (uses locationData)
+    ──────────────────────────────────────────── */
+    function buildFilterStateDropdown() {
+      const sel = document.getElementById('filter-state');
+      const curUser = getCurrentUser();
+      if (curUser.role === 'state_coordinator' && curUser.state) {
+        sel.innerHTML = `<option value="${curUser.state}">${curUser.state}</option>`;
+        sel.value = curUser.state;
+        sel.disabled = true;
+        onFilterStateChange();
+        return;
+      }
+      const states = Object.keys(locationData).sort();
+      sel.innerHTML = '<option value="">All States</option>' +
+        states.map(s => `<option value="${s}">${s}</option>`).join('');
+    }
+
+    function onFilterStateChange() {
+      const state = document.getElementById('filter-state').value;
+      const distSel = document.getElementById('filter-district');
+      const talukSel = document.getElementById('filter-taluk');
+      distSel.innerHTML = '<option value="">All Districts</option>';
+      talukSel.innerHTML = '<option value="">All Taluks</option>';
+      if (state && locationData[state]) {
+        const districts = Object.keys(locationData[state]).sort();
+        distSel.innerHTML += districts.map(d => `<option value="${d}">${d}</option>`).join('');
+      }
+      applyFilters();
+    }
+
+    function onFilterDistrictChange() {
+      const state = document.getElementById('filter-state').value;
+      const district = document.getElementById('filter-district').value;
+      const talukSel = document.getElementById('filter-taluk');
+      talukSel.innerHTML = '<option value="">All Taluks</option>';
+      if (state && district && locationData[state] && locationData[state][district]) {
+        const taluks = locationData[state][district];
+        talukSel.innerHTML += taluks.map(t => `<option value="${t}">${t}</option>`).join('');
+      }
+      applyFilters();
+    }
+
+    /* ────────────────────────────────────────────
+       Modal location dropdown wiring
+    ──────────────────────────────────────────── */
+    function onModalStateChange() {
+      initLocationDropdowns('form-state', 'form-district', 'form-taluk',
+        document.getElementById('form-state').value);
+    }
+
+    function onModalDistrictChange() {
+      initLocationDropdowns('form-state', 'form-district', 'form-taluk',
+        document.getElementById('form-state').value,
+        document.getElementById('form-district').value);
+    }
+
+    /* ────────────────────────────────────────────
+       Load Data
+    ──────────────────────────────────────────── */
+    async function loadCoordinators() {
+      try {
+        allCoordinators = await apiFetch('/coordinators') || [];
+        updateStats(allCoordinators);
+        renderTable(allCoordinators);
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    function updateStats(list) {
+      const byState = {};
+      list.forEach(c => { byState[c.state] = (byState[c.state] || 0) + 1; });
+      document.getElementById('stat-total').textContent = list.length;
+      document.getElementById('stat-ka').textContent = byState['Karnataka'] || 0;
+      document.getElementById('stat-tn').textContent = byState['Tamil Nadu'] || 0;
+      document.getElementById('stat-kl').textContent = byState['Kerala'] || 0;
+      document.getElementById('stat-ap').textContent = byState['Andhra Pradesh'] || 0;
+      document.getElementById('stat-tg').textContent = byState['Telangana'] || 0;
+
+      const curUser = getCurrentUser();
+      if (curUser.role === 'state_coordinator' && curUser.state) {
+        const stateMap = {
+          'Karnataka': 'stat-ka',
+          'Tamil Nadu': 'stat-tn',
+          'Kerala': 'stat-kl',
+          'Andhra Pradesh': 'stat-ap',
+          'Telangana': 'stat-tg'
+        };
+        for (const [sName, elemId] of Object.entries(stateMap)) {
+          const chip = document.getElementById(elemId)?.closest('.coord-stat-chip');
+          if (chip) {
+            if (sName === curUser.state) {
+              chip.style.border = '2px solid var(--primary-color)';
+              chip.style.background = 'rgba(234,88,12,0.12)';
+            } else {
+              chip.style.display = 'none';
+            }
+          }
+        }
+      }
+    }
+
+    /* ────────────────────────────────────────────
+       Render
+    ──────────────────────────────────────────── */
+    const STATE_CLASS = {
+      'Karnataka':       'state-ka',
+      'Tamil Nadu':      'state-tn',
+      'Kerala':          'state-kl',
+      'Andhra Pradesh':  'state-ap',
+      'Telangana':       'state-tg'
+    };
+
+    function renderTable(list) {
+      const tbody = document.getElementById('coordinators-table-body');
+      document.getElementById('results-count').textContent =
+        `Showing ${list.length} coordinator${list.length !== 1 ? 's' : ''}`;
+
+      if (!list || list.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="${canModify ? 7 : 6}"
+              style="text-align:center; color:var(--text-muted); padding:50px;">
+              <div style="font-size:36px; margin-bottom:12px;">📋</div>
+              <p>No coordinators found matching your filters.</p>
+            </td>
+          </tr>`;
+        return;
+      }
+
+      tbody.innerHTML = list.map(c => {
+        const stateClass = STATE_CLASS[c.state] || '';
+        const phone   = c.phone   || '—';
+        const email   = c.email   || '—';
+        const address = c.address || '—';
+
+        const actions = canModify ? `
+          <td style="text-align:right;">
+            <div style="display:flex; justify-content:flex-end; gap:6px;">
+              <button class="btn btn-secondary" onclick="openEditModal(${c.id})"
+                style="padding:5px 10px; font-size:12px;">Edit</button>
+              <button class="btn btn-danger" onclick="deleteCoordinator(${c.id})"
+                style="padding:5px 10px; font-size:12px;">Del</button>
+            </div>
+          </td>` : '';
+
+        return `
+          <tr>
+            <td>
+              <span class="state-badge ${stateClass}">${c.state}</span>
+            </td>
+            <td>
+              <div style="font-weight:600;">${c.district}</div>
+              <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">📍 ${c.taluk}</div>
+            </td>
+            <td style="font-weight:600; max-width:180px;">${c.unit_name}</td>
+            <td style="font-weight:700;">${c.coordinator_name}</td>
+            <td>
+              <span style="
+                display:inline-block; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600;
+                background:rgba(234,88,12,0.08); color:var(--primary-color);
+                border:1px solid rgba(234,88,12,0.15);">${c.role}</span>
+            </td>
+            <td>
+              <div style="font-size:13px;">📞 ${phone}</div>
+              <div style="font-size:12px; color:var(--text-secondary);">✉️ ${email}</div>
+              <div style="font-size:11px; color:var(--text-muted); max-width:200px;
+                white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${address}">
+                🏠 ${address}
+              </div>
+            </td>
+            ${actions}
+          </tr>`;
+      }).join('');
+    }
+
+    /* ────────────────────────────────────────────
+       Filter
+    ──────────────────────────────────────────── */
+    function applyFilters() {
+      const stateF   = document.getElementById('filter-state').value;
+      const distF    = document.getElementById('filter-district').value;
+      const talukF   = document.getElementById('filter-taluk').value;
+      const searchF  = document.getElementById('coord-search').value.toLowerCase().trim();
+
+      const filtered = allCoordinators.filter(c => {
+        if (stateF  && c.state    !== stateF)  return false;
+        if (distF   && c.district !== distF)   return false;
+        if (talukF  && c.taluk    !== talukF)  return false;
+        if (searchF) {
+          const haystack = [c.coordinator_name, c.unit_name, c.role, c.phone, c.email]
+            .join(' ').toLowerCase();
+          if (!haystack.includes(searchF)) return false;
+        }
+        return true;
+      });
+
+      renderTable(filtered);
+    }
+
+    function clearFilters() {
+      const curUser = getCurrentUser();
+      if (curUser.role === 'state_coordinator' && curUser.state) {
+        document.getElementById('filter-district').innerHTML = '<option value="">All Districts</option>';
+        document.getElementById('filter-taluk').innerHTML    = '<option value="">All Taluks</option>';
+        document.getElementById('coord-search').value   = '';
+        buildFilterStateDropdown();
+        renderTable(allCoordinators);
+        return;
+      }
+      document.getElementById('filter-state').value    = '';
+      document.getElementById('filter-district').innerHTML = '<option value="">All Districts</option>';
+      document.getElementById('filter-taluk').innerHTML    = '<option value="">All Taluks</option>';
+      document.getElementById('coord-search').value   = '';
+      buildFilterStateDropdown();
+      renderTable(allCoordinators);
+    }
+
+    /* ────────────────────────────────────────────
+       Modal: Create
+    ──────────────────────────────────────────── */
+    function openCreateModal() {
+      document.getElementById('coordinator-form').reset();
+      document.getElementById('coord-id').value = '';
+      document.getElementById('modal-title').textContent = 'Add Coordinator';
+      document.getElementById('modal-submit-btn').textContent = 'Save Coordinator';
+      const curUser = getCurrentUser();
+      const stateToSelect = (curUser.role === 'state_coordinator' && curUser.state) ? curUser.state : undefined;
+      // Init dropdowns fresh
+      initLocationDropdowns('form-state', 'form-district', 'form-taluk', stateToSelect);
+      const stateEl = document.getElementById('form-state');
+      if (stateToSelect) {
+        stateEl.value = stateToSelect;
+        stateEl.disabled = true;
+      } else {
+        stateEl.disabled = false;
+      }
+      openModal('coordinator-modal');
+    }
+
+    /* ────────────────────────────────────────────
+       Modal: Edit (pre-fills cascading dropdowns)
+    ──────────────────────────────────────────── */
+    async function openEditModal(id) {
+      try {
+        const c = await apiFetch(`/coordinators/${id}`);
+        if (!c) return;
+
+        document.getElementById('coord-id').value        = c.id;
+        document.getElementById('form-unit').value       = c.unit_name;
+        document.getElementById('form-name').value       = c.coordinator_name;
+        document.getElementById('form-phone').value      = c.phone  || '';
+        document.getElementById('form-email').value      = c.email  || '';
+        document.getElementById('form-address').value    = c.address || '';
+
+        // Cascading location pre-fill
+        await initLocationDropdowns('form-state', 'form-district', 'form-taluk',
+          c.state, c.district, c.taluk);
+
+        // Role pre-select (after dropdowns are ready)
+        const roleEl = document.getElementById('form-role');
+        roleEl.value = c.role;
+        // If role isn't in the option list, add it
+        if (!roleEl.value) {
+          const opt = document.createElement('option');
+          opt.value = c.role; opt.textContent = c.role; opt.selected = true;
+          roleEl.appendChild(opt);
+        }
+
+        document.getElementById('modal-title').textContent = 'Edit Coordinator';
+        document.getElementById('modal-submit-btn').textContent = 'Update Coordinator';
+        openModal('coordinator-modal');
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    /* ────────────────────────────────────────────
+       Submit
+    ──────────────────────────────────────────── */
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('coord-id').value;
+
+      const state    = document.getElementById('form-state').value;
+      const district = document.getElementById('form-district').value;
+      const taluk    = document.getElementById('form-taluk').value;
+
+      if (!state || !district || !taluk) {
+        showToast('Please select State, District and Taluk', 'error');
+        return;
+      }
+
+      const payload = {
+        state,
+        district,
+        taluk,
+        unit_name:        document.getElementById('form-unit').value.trim(),
+        coordinator_name: document.getElementById('form-name').value.trim(),
+        role:             document.getElementById('form-role').value,
+        phone:            document.getElementById('form-phone').value.trim(),
+        email:            document.getElementById('form-email').value.trim(),
+        address:          document.getElementById('form-address').value.trim()
+      };
+
+      try {
+        if (id) {
+          await apiFetch(`/coordinators/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+          showToast('Coordinator updated successfully!', 'success');
+        } else {
+          await apiFetch('/coordinators', { method: 'POST', body: JSON.stringify(payload) });
+          showToast('Coordinator registered successfully!', 'success');
+        }
+        closeModal('coordinator-modal');
+        await loadCoordinators();
+        applyFilters();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    /* ────────────────────────────────────────────
+       Delete
+    ──────────────────────────────────────────── */
+    async function deleteCoordinator(id) {
+      if (!confirm('Remove this coordinator from the directory?')) return;
+      try {
+        await apiFetch(`/coordinators/${id}`, { method: 'DELETE' });
+        showToast('Coordinator removed', 'success');
+        await loadCoordinators();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    /* ────────────────────────────────────────────
+       CSV Export
+    ──────────────────────────────────────────── */
+    function exportCSV() {
+      const rows = [
+        ['State','District','Taluk','Unit Name','Coordinator Name','Role','Phone','Email','Address']
+      ];
+      allCoordinators.forEach(c => {
+        rows.push([c.state, c.district, c.taluk, c.unit_name,
+          c.coordinator_name, c.role, c.phone||'', c.email||'', c.address||'']);
+      });
+      const csv = rows.map(r =>
+        r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')
+      ).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = 'sstpa_coordinators.csv';
+      a.click(); URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>

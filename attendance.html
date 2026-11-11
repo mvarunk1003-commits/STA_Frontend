@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Logs - OrgManager</title>
+    <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ea580c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SSTPA Portal">
+  <link rel="apple-touch-icon" href="images/logo.png">
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    .progress-bar-container {
+      width: 100%;
+      height: 8px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(to right, var(--primary-color), var(--success));
+      width: 0%;
+      border-radius: 4px;
+      transition: width 1s ease-in-out;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div id="sidebar-placeholder" class="sidebar glass-panel"></div>
+    
+    <main class="main-content">
+      <header id="header-placeholder" class="main-header"></header>
+
+      <div class="split-layout fade-in">
+        <!-- Member Attendance Rates -->
+        <section class="glass-panel glass-card">
+          <h2 style="margin-bottom: 20px;">Member Participation Rates</h2>
+          <div class="table-container">
+            <table class="glass-table">
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Attendance Rate</th>
+                  <th>Present / Total</th>
+                </tr>
+              </thead>
+              <tbody id="member-attendance-tbody">
+                <tr>
+                  <td colspan="3" style="text-align:center; color:var(--text-muted);">Loading member records...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Event Summary Stats -->
+        <section class="glass-panel glass-card">
+          <h2 style="margin-bottom: 20px;">Event Check-In Stats</h2>
+          <div class="table-container">
+            <table class="glass-table">
+              <thead>
+                <tr>
+                  <th>Event</th>
+                  <th>Present</th>
+                  <th>Absent</th>
+                </tr>
+              </thead>
+              <tbody id="event-attendance-tbody">
+                <tr>
+                  <td colspan="3" style="text-align:center; color:var(--text-muted);">Loading event summaries...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', loadAttendanceReport);
+
+    async function loadAttendanceReport() {
+      try {
+        const report = await apiFetch('/reports/attendance');
+        if (!report) return;
+
+        // Populate member attendance
+        const memberBody = document.getElementById('member-attendance-tbody');
+        if (!report.members || report.members.length === 0) {
+          memberBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No logs available.</td></tr>';
+        } else {
+          memberBody.innerHTML = report.members.map(m => {
+            const pct = m.total_events > 0 ? Math.round((m.present_count / m.total_events) * 100) : 0;
+            return `
+              <tr>
+                <td style="font-weight:600;">${m.first_name} ${m.last_name}</td>
+                <td>
+                  <span style="font-weight: 500;">${pct}%</span>
+                  <div class="progress-bar-container">
+                    <div class="progress-bar-fill" style="width: ${pct}%"></div>
+                  </div>
+                </td>
+                <td>${m.present_count} / ${m.total_events}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        // Populate event attendance
+        const eventBody = document.getElementById('event-attendance-tbody');
+        if (!report.events || report.events.length === 0) {
+          eventBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No events found.</td></tr>';
+        } else {
+          eventBody.innerHTML = report.events.map(e => {
+            const dateStr = new Date(e.date).toLocaleDateString(undefined, {month:'short', day:'numeric'});
+            return `
+              <tr>
+                <td>
+                  <strong style="display:block;">${e.title}</strong>
+                  <span style="font-size:12px; color:var(--text-muted);">${dateStr}</span>
+                </td>
+                <td><span class="badge badge-present">${e.present_count} present</span></td>
+                <td><span class="badge badge-absent">${e.absent_count} absent</span></td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

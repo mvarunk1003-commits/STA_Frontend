@@ -1,0 +1,78 @@
+{
+  "id": "/sstpa-portal",
+  "name": "SSTPA - Shankara Tattva Prasara Abhiyana",
+  "short_name": "SSTPA",
+  "description": "Official portal for Sri Shankara Tattva Prasara Abhiyana - Events, Members, Memos, Reports & Sacred Resources",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#fffef2",
+  "theme_color": "#ea580c",
+  "orientation": "any",
+  "categories": ["education", "lifestyle", "productivity", "utilities"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "images/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Events & Melas",
+      "short_name": "Events",
+      "description": "View and manage upcoming spiritual events",
+      "url": "./events.html",
+      "icons": [{ "src": "images/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Admin and management overview",
+      "url": "./dashboard.html",
+      "icons": [{ "src": "images/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Members Directory",
+      "short_name": "Members",
+      "description": "Coordinators, branches and volunteers",
+      "url": "./members.html",
+      "icons": [{ "src": "images/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Sacred Gallery",
+      "short_name": "Gallery",
+      "description": "Browse and submit event photos",
+      "url": "./gallery.html",
+      "icons": [{ "src": "images/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Portal Login",
+      "short_name": "Login",
+      "description": "Sign in to coordinator / admin account",
+      "url": "./login.html",
+      "icons": [{ "src": "images/logo.png", "sizes": "192x192" }]
+    }
+  ]
+}
